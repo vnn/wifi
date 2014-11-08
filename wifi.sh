@@ -98,7 +98,7 @@ fi
 case $1 in
     home)
 	access_point="HOME_WIFI"
-	password="00000000000000000000"
+	password="000000000000000"
 	static=1
 	ip="192.168.0.109"
 	netmask="255.255.255.0"
@@ -108,20 +108,20 @@ case $1 in
 	;;
     droid)
 	access_point="mydroid"
-	password="00000000000000000000"
+	password="000000000000000"
 	;;
     boy)
 	access_point="NUMERICABLE-4ZI2"
-	password="00000000000000000000"
+	password="000000000000000"
 	;;
     nico)
 	access_point="nicobox"
-	password="00000000000000000000"
+	password="000000000000000"
 	;;
     free)
 	access_point="FreeWifi"
 	username="1234567890"
-	password="00000000000000000000"
+	password="000000000000000"
 	url="https://wifi.Free.fr/Auth"
 	okmatch="CONNEXION AU SERVICE REUSSIE"
 	hotspot="free"
@@ -129,7 +129,7 @@ case $1 in
     sfr)
 	access_point="SFR WiFi FON"
 	username="you@sfr.fr"
-	password="00000000000000000000"
+	password="000000000000000"
 	url="https://hotspot.wifi.sfr.fr/nb4_crypt.php"
 	jspopupurl="http://192.168.2.1:3990/logon?username=ssowifi.neuf.fr"
 	userurl="http%3A%2F%2Fwww.fon.com%2Ffr%2Flanding%2Ffoneroneufbox%3Bfon%3B%3B"
@@ -180,16 +180,16 @@ elif [ $hotspot ]; then
 
     case $hotspot in
 	free)
-	    $curl -s -F "login=${username}" -F "password="00000000000000000000"
+	    $curl -s -F "login=${username}" -F "password=${password}" "${url}" | \
 		grep -q "${okmatch}" && success="yes"
 	    ;;
 	sfr)
 	    challenge=`$curl -L http://www.google.com`
 	    challenge=`echo $challenge | grep challenge= | \
                 sed -r 's/.*challenge=([0-9a-z]+).*/\1/'`
-	    response=`$curl -d "username=${login}&password="00000000000000000000"
+	    response=`$curl -d "username=${username}&password=${password}&cond=on&challenge=${challenge}" \
 		${url} | grep response= | sed -r 's/.*response=([0-9a-z]+).*/\1/'`
-	    $curl "${jspopupurl}/${login}&response=${response}&uamip=192.168.2.1&userurl=${userurl}" | \
+	    $curl "${jspopupurl}/${username}&response=${response}&uamip=192.168.2.1&userurl=${userurl}" | \
 		grep -q "${okmatch}" && success="yes"
 	    ;;
     esac
