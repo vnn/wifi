@@ -16,7 +16,7 @@ wifi is a minimal and secure wifi network manager.
 * Scan for available AP (coming soon)
 
 ## Usage
-First, you have to init all the necessary stuff (folders, database file, GnuPG key) using the _init_ argument.
+First, you have to init the necessary folders, database file and GnuPG key (default: _~/.wifi_), see below:
 ```sh
 $ wifi -h
 usage: wifi [-h] [-v] {add,connect,delete,init,list} ...
