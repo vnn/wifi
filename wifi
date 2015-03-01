@@ -76,13 +76,12 @@ def init_components(conf):
         sys.exit(1)
 
     # Create GnuPG stuff
-    print('GnuPG:'),
     try:
         open(conf['gpgdir'] + 'secring.gpg')
     except:
         passmgr = PasswordManager(conf)
         passmgr.generate_key()
-    print('done')
+    print('GnuPG: done')
 
 
 def connect(passwd, interface):
@@ -131,9 +130,9 @@ class PasswordManager(object):
 
         # prompt for ap or master password
         if sys.argv[1] == 'add':
-            self.passwd = getpass.getpass('Network password: ')
+            self.passwd = getpass.getpass('Password: ')
         elif sys.argv[1] == 'connect':
-            self.master = getpass.getpass('Master password: ')
+            self.master = getpass.getpass('Password: ')
         elif sys.argv[1] == 'init':
             pprompt = lambda: (getpass.getpass('Master password: '), getpass.getpass('Retype password: '))
             self.master, master2 = pprompt()

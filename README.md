@@ -23,14 +23,16 @@ usage: wifi [-h] [-v] {add,connect,delete,init,list} ...
 $ wifi init
 Directory structure: done
 Database: done
+Master password:
+Retype password:
 GnuPG: done
 
 $ wifi add ACCESS_POINT1
-Network password:
+Password:
 Access point ACCESS_POINT1 addedd successfully
 
 $ wifi add ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1
-Network password:
+Password:
 Access point ACCESS_POINT2 addedd successfully
 
 $ wifi list
@@ -38,9 +40,11 @@ $ wifi list
 2) ACCESS_POINT2
 
 $ sudo wifi connect ACCESS_POINT1
+Master password:
 Connected to ACCESS_POINT1
 
 $ sudo wifi connect 2
+Master password:
 Connected to ACCESS_POINT2
 
 $ wifi delete ACCESS_POINT1
