@@ -12,12 +12,21 @@ wifi is a minimal and secure wifi network manager using gpg password encryption.
 
 ##USAGE (see -h):
 ```sh
-$ wifi add ACCESS_POINT
-$ wifi add ACCESS_POINT 10.0.0.5 255.255.255.0 10.0.0.1
+$ wifi add ACCESS_POINT1
+Network password: 
+Access point ACCESS_POINT1 addedd successfully
+$ wifi add ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1
+Network password:                                                                                             
+Access point ACCESS_POINT2 addedd successfully
 $ wifi list
-$ sudo wifi connect ACCESS_POINT
-$ sudo wifi connect 1 (alias)
-$ wifi delete ACCESS_POINT
+1) ACCESS_POINT1
+2) ACCESS_POINT2
+$ sudo wifi connect ACCESS_POINT1
+Connected to ACCESS_POINT1
+$ sudo wifi connect 2
+Connected to ACCESS_POINT2
+$ wifi delete ACCESS_POINT1
+Access point ACCESS_POINT1 deleted sucessfully
 ```
 
 This script is a first draft/experiment around Python and it will be
