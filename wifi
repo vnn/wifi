@@ -43,7 +43,6 @@ def parse_conf():
 def init_components(conf):
     """ Create and install all required components (one-time) """
     # Create folders
-    print('Directory structure:'),
     try:
         if not os.path.exists(conf['basedir']):
             os.makedirs(conf['basedir'])
@@ -52,17 +51,16 @@ def init_components(conf):
         if not os.path.exists(conf['pwdir']):
             os.makedirs(conf['pwdir'])
     except:
-        print('permission denied')
+        print('Directory structure: permission denied')
         sys.exit(1)
-    print('done')
+    print('Directory structure: done')
 
     # Create database file
     try:
-        print('Database:'),
         open(conf['dbfile'], 'w')
-        print('done')
+        print('Database: done')
     except:
-        print('permission denied')
+        print('Database: permission denied')
         sys.exit(1)
 
     # Create GnuPG stuff
@@ -70,9 +68,8 @@ def init_components(conf):
         open(conf['gpgdir'] + 'secring.gpg')
     except:
         passmgr = PasswordManager(conf)
-        print('GnuPG:'),
         passmgr.generate_key()
-        print('done')
+        print('GnuPG: done')
 
 
 def connect(passwd, interface):
@@ -282,7 +279,7 @@ def main():
 
     # init (one-time)
     if sys.argv[1] == 'init':
-        init_components()
+        init_components(conf)
         sys.exit(0)
 
     # process arguments
