@@ -132,7 +132,7 @@ class PasswordManager(object):
         if sys.argv[1] == 'add':
             self.passwd = getpass.getpass('Password: ')
         elif sys.argv[1] == 'connect':
-            self.master = getpass.getpass('Password: ')
+            self.master = getpass.getpass('Master Password: ')
         elif sys.argv[1] == 'init':
             pprompt = lambda: (getpass.getpass('Master password: '), getpass.getpass('Retype password: '))
             self.master, master2 = pprompt()
