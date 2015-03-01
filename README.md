@@ -1,6 +1,6 @@
 wifi
 ====
-wifi is a minimal and secure wifi network manager using GnuPG for password encryption.
+wifi is a minimal and secure wifi network manager.
 
 ## Requirements
  * python 3.4: https://www.python.org/
