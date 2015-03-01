@@ -1,8 +1,13 @@
 wifi
 ====
-wifi is a minimal and secure wifi network manager using gpg password encryption.
+wifi is a minimal and secure wifi network manager using GnuPG for password encryption.
 
-## FEATURES:
+## Requirements
+ * python 3.4: https://www.python.org/
+ * python-gnupg: https://pypi.python.org/pypi/gnupg/
+ * requests: https://pypi.python.org/pypi/requests
+
+## features
 * Connect to a list of predefined networks
 * Add or delete networks
 * Password encryption via GnuPG
@@ -10,8 +15,11 @@ wifi is a minimal and secure wifi network manager using gpg password encryption.
 * ipv6 (coming soon)
 * scan for available AP (coming soon)
 
-##USAGE (see -h):
+## Usage
 ```sh
+$ wifi -h
+usage: wifi [-h] [-v] {add,connect,delete,init,list} ...
+
 $ wifi add ACCESS_POINT1
 Network password:
 Access point ACCESS_POINT1 addedd successfully
