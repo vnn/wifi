@@ -50,5 +50,5 @@ Access point ACCESS_POINT1 deleted sucessfully
 ## Note
 This script was intended to be used on an OpenBSD laptop, connecting
 to ipv4 networks. That being said, it should work on several unix systems
-without huge changes as well as ipv6 networks. Thanks to my friend Tamentis
+as well as ipv6 network with a few efforts. Thanks to my friend Tamentis
 for his help on this projects.
