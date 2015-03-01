@@ -273,7 +273,6 @@ def main():
         except:
             parser.error('invalid network configuration')
 
-
     # load conf
     conf = parse_conf()
 
