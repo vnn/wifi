@@ -48,7 +48,7 @@ Access point ACCESS_POINT1 deleted sucessfully
 ```
 
 ## Note
-This script is a first draft/experiment around Python and it will be
-certainly improved in a near future. It only intend to work on ipv4
-networks, but you can quickly improve that if you need to. Thanks to 
-my friend Tamentis for his help on this little project.
+This script was intended to be used on an OpenBSD laptop, connecting
+to ipv4 networks. That being said, it should work on several unix systems
+without huge changes as well as ipv6 networks. Thanks to my friend Tamentis
+for his help on this projects.
