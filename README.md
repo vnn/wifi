@@ -51,8 +51,9 @@ Connected to ACCESS_POINT2
 $ wifi delete ACCESS_POINT1
 Access point ACCESS_POINT1 deleted sucessfully
 ```
-Access points config informations are stored in a text database file located
-in _~/.wifi/wifi.db_, and encrypted passwords in _~/.wifi/private_.
+Each access point config informations are stored in a text database file located
+in _~/.wifi/wifi.db_, and its encrypted password in a standalone file conventionally 
+named _~/.wifi/private/<NAME>_.
 
 ## Note
 This script was intended to be used on an OpenBSD laptop, connecting
