@@ -52,7 +52,7 @@ $ wifi delete ACCESS_POINT1
 Access point ACCESS_POINT1 deleted sucessfully
 ```
 Each access point config informations are stored in a text database file located
-in _~/.wifi/wifi.db_, and its encrypted password in a standalone file conventionally 
+in _~/.wifi/wifi.db_. Its encrypted password is saved in a standalone file conventionally 
 named _~/.wifi/private/\<NAME\>_.
 
 ## Note
