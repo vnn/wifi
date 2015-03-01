@@ -276,12 +276,10 @@ def main():
     # load conf
     conf = parse_conf()
 
-    # init (one-time)
+    # process arguments
     if sys.argv[1] == 'init':
         init_components(conf)
         sys.exit(0)
-
-    # process arguments
     try:
         db = DatabaseManager(conf)
         passmgr = PasswordManager(conf)
