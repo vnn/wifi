@@ -10,6 +10,7 @@ wifi is a minimal and secure wifi network manager using GnuPG for password encry
 ## Features
 * Connect to a list of predefined networks
 * Add or delete networks
+* list available networks
 * Password encryption via GnuPG
 * Aliases (for quick use)
 * scan for available AP (coming soon)
