@@ -1,0 +1,328 @@
+#!/usr/bin/env python3.4
+
+"""
+wifi is a minimal and secure wifi network manager.
+
+FEATURES:
+
+ * Connect to a list of predefined networks
+ * Add or delete networks
+ * Password encryption via GnuPG
+ * Aliases (for quick use)
+
+ * ipv6 (coming soon)
+ * scan for available ap (coming soon)
+
+USAGE (see -h):
+
+ $ wifi add ACCESS_POINT
+ $ wifi add ACCESS_POINT 10.0.0.5 255.255.255.0 10.0.0.1
+ $ wifi list
+ $ sudo wifi connect ACCESS_POINT
+ $ sudo wifi connect 1 (alias)
+ $ wifi delete ACCESS_POINT
+
+This script is a first draft/experiment around Python and it will be
+certainly improved in a near future.
+"""
+
+import argparse
+import getpass
+import gnupg
+import ipaddress
+import os
+import re
+import requests
+from subprocess import call, DEVNULL
+import sys
+
+
+def parse_conf():
+    """ Return config file values """
+    conf = {
+        'basedir': os.path.expanduser('~/.wifi/'),
+        'dbfile' : os.path.expanduser('~/.wifi/wifi.db'),
+        'gpgdir' : os.path.expanduser('~/.wifi/gnupg/'),
+        'pwdir'  : os.path.expanduser('~/.wifi/private/'),
+        'id'     : 'v@vnn.io',
+        'if'    : 'iwn0'
+    }
+    return conf
+
+
+def init_components(conf):
+    """ Create and install all required components (one-time) """
+    # Create folders
+    print('Directory structure:'),
+    try:
+        if not os.path.exists(conf['basedir']):
+            os.makedirs(conf['basedir'])
+        if not os.path.exists(conf['gpgdir']):
+            os.makedirs(conf['gpgdir'])
+        if not os.path.exists(conf['pwdir']):
+            os.makedirs(conf['pwdir'])
+    except:
+        print('permission denied')
+        sys.exit(1)
+    print('done')
+
+    # Create database file
+    try:
+        print('Database:'),
+        open(conf['dbfile'], 'w')
+        print('done')
+    except:
+        print('permission denied')
+        sys.exit(1)
+
+    # Create GnuPG stuff
+    print('GnuPG:'),
+    try:
+        open(conf['gpgdir'] + 'secring.gpg')
+    except:
+        passmgr = PasswordManager(conf)
+        passmgr.generate_key()
+    print('done')
+
+
+def connect(passwd, interface):
+    """ Connect to a wifi access point. """
+    def cmd(command):
+        call(command, stdout=DEVNULL, stderr=DEVNULL)
+
+    # setup interface/route/dns
+    cmd(["ifconfig", interface, "down"])
+    cmd(['ifconfig', interface, 'nwid', sys.argv[2], 'wpakey', passwd])
+
+    if len(sys.argv) == 4:
+        cmd(['ifconfig', interface, 'inet', sys.argv[3], 'netmask', sys.argv[4]])
+        cmd(['route', 'add', 'default', sys.argv[5]])
+        with open('/etc/resolv.conf', 'w') as fp:
+            fp.write('nameserver 8.8.8.8')
+    else:
+        cmd(['dhclient', interface])
+
+    # restart firewall and flush rules
+    cmd(["pfctl", "-d"])
+    cmd(["pfctl", "-e", "-Fa", "-f/etc/pf.conf"])
+
+    # check connectivity
+    for i in range(10):
+        try:
+            r = requests.get('http://www.google.fr')
+            print('Connected')
+            break
+        except:
+            if i == 9:
+                print('Error: timeout')
+
+
+class PasswordManager(object):
+
+    """
+    This class handles password related operations.
+    """
+
+    def __init__(self, conf):
+        self.conf = conf
+        self.private = self.conf['pwdir']
+        self.gpg = gnupg.GPG(gnupghome=self.conf['gpgdir'])
+        self.gpg.encoding = 'utf-8'
+
+        # prompt for ap or master password
+        if sys.argv[1] == 'add':
+            self.passwd = getpass.getpass('Network password: ')
+        elif sys.argv[1] == 'connect':
+            self.master = getpass.getpass('Master password: ')
+        elif sys.argv[1] == 'init':
+            pprompt = lambda: (getpass.getpass('Master password: '), getpass.getpass('Retype password: '))
+            self.master, master2 = pprompt()
+            while self.master != master2:
+                print('Passwords do not match. Try again')
+                self.master, master2 = pprompt()
+
+    def encrypt(self):
+        """ Encrypt a password """
+        self.passwd = self.gpg.encrypt(self.passwd, self.conf['id'])
+        self.passwd = str(self.passwd)
+        with open(self.private + sys.argv[2], 'w') as fp:
+            fp.write(self.passwd)
+
+    def decrypt(self, passwd=''):
+        """ Decrypt a password """
+        for i in open(self.private + sys.argv[2]):
+            passwd += i
+        self.passwd = self.gpg.decrypt(passwd, passphrase=self.master)
+        self.passwd = str(self.passwd)
+
+    def generate_key(self):
+        input_data = self.gpg.gen_key_input(
+            key_length=2048,
+            name_email=self.conf['id'],
+            passphrase=self.master)
+        key = self.gpg.gen_key(input_data)
+
+    def delete(self):
+        """ delete a password """
+        os.remove(self.private + sys.argv[2])
+
+
+class DatabaseManager(object):
+
+    """
+    This class handles all database operations.
+    """
+
+    def __init__(self, conf):
+        self.conf = conf
+        if sys.argv[1] != 'list':
+            self.check()
+
+    def show(self, count=1, netconf='dhcp'):
+        """ Show database entries. """
+        print('Available access points:')
+        for i in open(self.conf['dbfile']):
+            i = i.strip().split(' | ')
+            if len(i) > 1:
+                netconf = 'static'
+            print('{}) {} - {}'.format(count, i[0], netconf))
+            count += 1
+        pass
+
+    def check(self):
+        """ Lookup for entry in database. """
+        self.registered = False
+
+        def _is_valid_alias():
+            try:
+                alias = int(sys.argv[2])
+                count = 1
+                for i in open(self.conf['dbfile']):
+                    if count == alias:
+                        i = i.split(' | ')
+                        sys.argv[2] = i[0].strip()
+                        return True
+                    count += 1
+                return False
+            except:
+                return False
+
+        def _is_valid_entry():
+            for i in open(self.conf['dbfile']):
+                if sys.argv[2] in i:
+                    return True
+            return False
+
+        if _is_valid_entry() or _is_valid_alias():
+            self.registered = True
+
+        if sys.argv[1] == 'add' and self.registered:
+            print('Error: access point already registered')
+            sys.exit(1)
+        elif (sys.argv[1] == 'connect' or sys.argv[1] == 'delete') \
+                and not self.registered:
+            print('Error: unknown access point')
+            sys.exit(1)
+
+    def save(self):
+        """ Remove or add a database entry. """
+        if self.registered:
+            os.rename(self.conf['dbfile'], self.conf['dbfile'] + '~')
+            dest = open(self.conf['dbfile'], 'w')
+            source = open(self.conf['dbfile'] + '~')
+
+            for i in source:
+                if not sys.argv[2] in i:
+                    dest.write(i)
+
+            source.close()
+            dest.close()
+            os.remove(self.conf['dbfile'] + '~')
+
+            print('Access point {} deleted successfully'.format(sys.argv[2]))
+        else:
+            entry = ''
+
+            with open(self.conf['dbfile'], 'a') as fp:
+                for i in sys.argv[2:]:
+                    entry += i + ' | '
+                entry = entry[:-3] + '\n'
+                fp.write(entry)
+
+            print('Access point {} addedd successfully'.format(sys.argv[2]))
+
+
+def main():
+
+    # Argparse
+    parser = argparse.ArgumentParser(prog='wifi', description='Securely manage wifi access points')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+
+    subparsers = parser.add_subparsers(dest='action')
+    subparsers.required = True
+
+    parser_a = subparsers.add_parser('add', help='add an access point')
+    parser_a.add_argument('nwid', help='access point id')
+    parser_a.add_argument('ip', nargs='?', help='ipv4 address', default=False)
+    parser_a.add_argument('netmask', nargs='?', help='netmask', default=False)
+    parser_a.add_argument('gateway', nargs='?', help='gateway', default=False)
+    parser_c = subparsers.add_parser('connect', help='connect to an access point')
+    parser_c.add_argument('nwid', help='connect to an access point')
+    parser_b = subparsers.add_parser('delete', help='delete an access point')
+    parser_b.add_argument('nwid', help='delete an access point')
+    parser_e = subparsers.add_parser('init', help='init user config files')
+    parser_e.add_argument('init', action='store_const', const='init',
+        help='install config files (default: ~/.wifi) \
+        and create GnuPG key for password encryption')
+    parser_d = subparsers.add_parser('list', help='list saved access points')
+    parser_d.add_argument('list', action='store_const', const='list',
+        help='list available access points')
+
+    args = parser.parse_args()
+
+    # verify args
+    if len(sys.argv) > 3:
+        if not args.netmask:
+            parser.error('the following arguments are required: netmask gateway')
+        elif not args.gateway:
+            parser.error('the following arguments are required: gateway')
+        try:
+            ipaddress.ip_address(sys.argv[3])
+            ipaddress.ip_address(sys.argv[4])
+            if not re.match("^[\.A-Za-z0-9_-]*$", sys.argv[5]):
+                raise
+        except:
+            parser.error('invalid network configuration')
+
+
+    # load conf
+    conf = parse_conf()
+
+    # init (one-time)
+    if sys.argv[1] == 'init':
+        init_components()
+        sys.exit(0)
+
+    # process arguments
+    try:
+        db = DatabaseManager(conf)
+        passmgr = PasswordManager(conf)
+
+        if sys.argv[1] == 'list':
+            db.show()
+        elif sys.argv[1] == 'connect':
+            passmgr.decrypt()
+            connect(passmgr.passwd, conf['if'])
+        elif sys.argv[1] == 'add':
+            passmgr.encrypt()
+            db.save()
+        elif sys.argv[1] == 'delete':
+            passmgr.delete()
+            db.save()
+    except KeyboardInterrupt:
+        print()
+        sys.exit()
+
+
+if __name__ == "__main__":
+    main()
