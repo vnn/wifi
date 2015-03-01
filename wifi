@@ -7,23 +7,12 @@ FEATURES:
 
  * Connect to a list of predefined networks
  * Add or delete networks
+ * List available networks
  * Password encryption via GnuPG
  * Aliases (for quick use)
+ * Scan for available AP (coming soon)
 
- * ipv6 (coming soon)
- * scan for available ap (coming soon)
-
-USAGE (see -h):
-
- $ wifi add ACCESS_POINT
- $ wifi add ACCESS_POINT 10.0.0.5 255.255.255.0 10.0.0.1
- $ wifi list
- $ sudo wifi connect ACCESS_POINT
- $ sudo wifi connect 1 (alias)
- $ wifi delete ACCESS_POINT
-
-This script is a first draft/experiment around Python and it will be
-certainly improved in a near future.
+See -h for help.
 """
 
 import argparse
@@ -39,6 +28,7 @@ import sys
 
 def parse_conf():
     """ Return config file values """
+    # MODIFY THIS TO FIT YOUR NEEDS
     conf = {
         'basedir': os.path.expanduser('~/.wifi/'),
         'dbfile' : os.path.expanduser('~/.wifi/wifi.db'),
@@ -80,8 +70,9 @@ def init_components(conf):
         open(conf['gpgdir'] + 'secring.gpg')
     except:
         passmgr = PasswordManager(conf)
+        print('GnuPG:'),
         passmgr.generate_key()
-    print('GnuPG: done')
+        print('done')
 
 
 def connect(passwd, interface):
@@ -154,16 +145,16 @@ class PasswordManager(object):
         self.passwd = self.gpg.decrypt(passwd, passphrase=self.master)
         self.passwd = str(self.passwd)
 
+    def delete(self):
+        """ delete a password """
+        os.remove(self.private + sys.argv[2])
+
     def generate_key(self):
         input_data = self.gpg.gen_key_input(
             key_length=2048,
             name_email=self.conf['id'],
             passphrase=self.master)
         key = self.gpg.gen_key(input_data)
-
-    def delete(self):
-        """ delete a password """
-        os.remove(self.private + sys.argv[2])
 
 
 class DatabaseManager(object):
@@ -184,7 +175,7 @@ class DatabaseManager(object):
             i = i.strip().split(' | ')
             if len(i) > 1:
                 netconf = 'static'
-            print('{}) {} - {}'.format(count, i[0], netconf))
+            print('{}) {} ({})'.format(count, i[0], netconf))
             count += 1
         pass
 
@@ -192,17 +183,15 @@ class DatabaseManager(object):
         """ Lookup for entry in database. """
         self.registered = False
 
-        def _is_valid_alias():
+        def _is_valid_alias(count=1):
             try:
-                alias = int(sys.argv[2])
-                count = 1
                 for i in open(self.conf['dbfile']):
-                    if count == alias:
+                    if count == int(sys.argv[2]):
                         i = i.split(' | ')
                         sys.argv[2] = i[0].strip()
                         return True
                     count += 1
-                return False
+                raise
             except:
                 return False
 
@@ -223,7 +212,7 @@ class DatabaseManager(object):
             print('Error: unknown access point')
             sys.exit(1)
 
-    def save(self):
+    def save(self, entry=''):
         """ Remove or add a database entry. """
         if self.registered:
             os.rename(self.conf['dbfile'], self.conf['dbfile'] + '~')
@@ -237,22 +226,16 @@ class DatabaseManager(object):
             source.close()
             dest.close()
             os.remove(self.conf['dbfile'] + '~')
-
             print('Access point {} deleted successfully'.format(sys.argv[2]))
         else:
-            entry = ''
-
             with open(self.conf['dbfile'], 'a') as fp:
                 for i in sys.argv[2:]:
                     entry += i + ' | '
-                entry = entry[:-3] + '\n'
-                fp.write(entry)
-
-            print('Access point {} addedd successfully'.format(sys.argv[2]))
+                fp.write(entry[:-3] + '\n')
+            print('Access point {} added successfully'.format(sys.argv[2]))
 
 
 def main():
-
     # Argparse
     parser = argparse.ArgumentParser(prog='wifi', description='Securely manage wifi access points')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
