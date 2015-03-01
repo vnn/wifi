@@ -16,9 +16,15 @@ wifi is a minimal and secure wifi network manager using GnuPG for password encry
 * scan for available AP (coming soon)
 
 ## Usage
+First, you have to init all the necessary stuff (folders, database file, GnuPG key) using the _init_ argument.
 ```sh
 $ wifi -h
 usage: wifi [-h] [-v] {add,connect,delete,init,list} ...
+
+$ wifi init
+Directory structure: done
+Database: done
+GnuPG: done
 
 $ wifi add ACCESS_POINT1
 Network password:
