@@ -7,7 +7,7 @@ wifi is a minimal and secure wifi network manager using GnuPG for password encry
  * python-gnupg: https://pypi.python.org/pypi/gnupg/
  * requests: https://pypi.python.org/pypi/requests
 
-## features
+## Features
 * Connect to a list of predefined networks
 * Add or delete networks
 * Password encryption via GnuPG
