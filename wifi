@@ -1,7 +1,8 @@
 #!/usr/bin/env python3.4
 
 """
-wifi is a minimal and secure wifi network manager.
+wifi 1.2
+Minimal and secure wifi network manager.
 
 FEATURES:
 
@@ -31,10 +32,9 @@ import requests
 
 def parse_conf():
     """ Return config file values """
-    # MODIFY THIS TO FIT YOUR NEEDS
     conf = {
         'basedir' : os.path.expanduser('~/.wifi/'),
-        'dbfile'  : os.path.expanduser('~/.wifi/wifi.db'),
+        'dbfile'  : os.path.expanduser('~/.wifi/access_points.db'),
         'pwdir'   : os.path.expanduser('~/.wifi/passwords/'),
         'id'      : os.getlogin() + '@' + os.uname()[1],
         'if'      : 'iwn0' # modify this to fit your needs
@@ -50,7 +50,6 @@ def init_components(conf):
     except:
         print('Directory structure: permission denied')
         sys.exit(1)
-
     try:
         f = open(conf['dbfile'], 'w')
         f.write('{}')
@@ -58,10 +57,9 @@ def init_components(conf):
     except:
         print('Database: permission denied')
         sys.exit(1)
-
     try:
         passmgr = PasswordManager(conf)
-        passmgr.generate_key()
+        passmgr.genkey()
         print('GnuPG: done')
     except:
         print('GnuPG: failed')
@@ -129,9 +127,9 @@ class PasswordManager(object):
         self.private = self.conf['pwdir']
         self.gpg = gnupg.GPG(gnupghome=self.conf['basedir'])
         self.gpg.encoding = 'utf-8'
-        self.prompt()
+        self._prompt()
 
-    def prompt(self):
+    def _prompt(self):
         """ Prompt for password """
         if sys.argv[1] == 'add':
             self.passwd = getpass('Password: ')
@@ -162,7 +160,7 @@ class PasswordManager(object):
         """ delete a password """
         os.remove(self.private + sys.argv[2] + '.gpg')
 
-    def generate_key(self):
+    def genkey(self):
         input_data = self.gpg.gen_key_input(key_length=2048,
             name_email=self.conf['id'], passphrase=self.master)
         key = self.gpg.gen_key(input_data)
@@ -178,6 +176,7 @@ class DatabaseManager(object):
         with open(dbfile) as fp:
             self.db = json.load(fp)
         self.dbkeys = sorted(self.db.keys())
+        self.dbfile = dbfile
 
     def show(self, count=0):
         """ Show database entries. """
@@ -209,20 +208,18 @@ class DatabaseManager(object):
             print('Error: unknown access point')
             sys.exit(1)
 
-    def save(self, entry=''):
+    def save(self, count=3):
         """ Remove or add a database entry. """
         if self.registered:
             del self.db[sys.argv[2]]
         else:
             newentry = { sys.argv[2]: {} }
-            try:
-                newentry[sys.argv[2]] = {
-                    "ip": sys.argv[3],
-                    "netmask": sys.argv[4],
-                    "gateway": sys.argv[5]
-                }
-            except:
-                pass
+            for i in ['ip', 'netmask', 'gateway']:
+                try:
+                    newentry[sys.argv[2]][i] = sys.argv[count]
+                except:
+                    pass
+                count += 1
             self.db.update(newentry)
         with open(self.dbfile, 'w') as fp:
             json.dump(self.db, fp, indent=4)
@@ -232,7 +229,7 @@ class DatabaseManager(object):
 def main():
     # Argparse
     parser = argparse.ArgumentParser(prog='wifi', description='Securely manage wifi access points')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1')
 
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
