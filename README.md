@@ -55,24 +55,24 @@ Options:
 
 ### Flow
 ```sh
-$ wifi --add ACCESS_POINT1
+$ wifi --add home ACCESS_POINT1
 Password:
 Access point ACCESS_POINT1 addedd successfully
 
-$ wifi --add ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1 8.8.8.8
+$ wifi --add office ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1 8.8.8.8
 Password:
 Access point ACCESS_POINT2 added successfully
 
 $ wifi --list
-1) ACCESS_POINT1
-2) ACCESS_POINT2
+1) home
+2) office
 
-$ sudo wifi --connect ACCESS_POINT1
+$ sudo wifi --connect home
 Master password:
 Connected to ACCESS_POINT1
 
-$ wifi --delete ACCESS_POINT1
-Access point ACCESS_POINT1 deleted sucessfully
+$ wifi --delete office
+Access point ACCESS_POINT2 deleted sucessfully
 
 $ sudo wifi --scan
 1) Bbox-A90014 (187dB)
