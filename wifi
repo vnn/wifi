@@ -228,9 +228,8 @@ def main():
     # verify args
     if args['<ip>']:
         try:
-            ipaddress.ip_address(args['<ip>'])
-            ipaddress.ip_address(args['<netmask>'])
-            ipaddress.ip_address(args['<dns>'])
+            for i in [args['<ip>'], args['<netmask>'], args['<gateway>']]:
+                ipaddress.ip_address(i)
             if not re.match("^[\.A-Za-z0-9_-]*$", args['<gateway>']):
                 raise
         except:
