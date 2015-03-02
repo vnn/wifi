@@ -57,11 +57,11 @@ Options:
 ```sh
 $ wifi --add home ACCESS_POINT1
 Password:
-Access point ACCESS_POINT1 addedd successfully
+Done
 
 $ wifi --add office ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1 8.8.8.8
 Password:
-Access point ACCESS_POINT2 added successfully
+Done
 
 $ wifi --list
 1) home
@@ -72,7 +72,7 @@ Master password:
 Connected to ACCESS_POINT1
 
 $ wifi --delete office
-Access point ACCESS_POINT2 deleted sucessfully
+Done
 
 $ sudo wifi --scan
 1) Bbox-A90014 (187dB)
