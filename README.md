@@ -1,62 +1,90 @@
 wifi
 ====
-wifi is a minimal and secure wifi network manager.
+wifi is a secure wifi network manager designed for OpenBSD.
+
+## Features
+* Connect to a list of registered access points
+* Add or delete access points
+* List all registered access points
+* Scan for available access points
+* Password encryption via GnuPG
 
 ## Requirements
  * python 3.4: https://www.python.org/
+ * docopt: http://docopt.org/
  * python-gnupg: https://pypi.python.org/pypi/gnupg/
  * requests: https://pypi.python.org/pypi/requests
 
-## Features
-* Connect to a list of predefined networks
-* Add or delete networks
-* List available networks
-* Password encryption via GnuPG
-* Aliases (for quick use)
-* Scan for available AP (coming soon)
+## Installation
+First, you have to create the necessary folders, database file and generate the GnuPG key (default: _~/.wifi_). Hopefully, everything is done automatically:
 
-## Usage
-First, you have to init the necessary folders, database file and GnuPG key (default: _~/.wifi_), see below:
 ```sh
-$ wifi -h
-usage: wifi [-h] [-v] {add,connect,delete,init,list} ...
-
-$ wifi init
+$ wifi --init
 Directory structure: done
 Database: done
 Master password:
 Retype password:
 GnuPG: done
+```
 
-$ wifi add ACCESS_POINT1
+## Usage
+```sh
+$ wifi --help
+Manage Wifi access points.
+
+Usage:
+  wifi --add <alias> <nwid> [(<ip> <netmask> <gateway> <dns>)]
+  wifi --delete <alias>
+  wifi --connect <alias>
+  wifi --list
+  wifi --scan
+  wifi --init
+  wifi --help
+  wifi --version
+
+Options:
+  -h --help      Show this screen.
+  -v --version   Show version.
+  -i --init      Initialize required files.
+  -a --add       Add an access point.
+  -d --delete    Delete ean access point.
+  -c --connect   Connect to an access point.
+  -l --list      List available access points.
+  -s --scan      Show the results of an access point scan.
+```
+
+### Flow
+```sh
+$ wifi --add home ACCESS_POINT1
 Password:
-Access point ACCESS_POINT1 addedd successfully
+Done
 
-$ wifi add ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1
+$ wifi --add office ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1 8.8.8.8
 Password:
-Access point ACCESS_POINT2 addedd successfully
+Done
 
-$ wifi list
-1) ACCESS_POINT1
-2) ACCESS_POINT2
+$ wifi --list
+1) home
+2) office
 
-$ sudo wifi connect ACCESS_POINT1
+$ sudo wifi --connect home
 Master password:
 Connected to ACCESS_POINT1
 
-$ sudo wifi connect 2
-Master password:
-Connected to ACCESS_POINT2
+$ wifi --delete office
+Done
 
-$ wifi delete ACCESS_POINT1
-Access point ACCESS_POINT1 deleted sucessfully
+$ sudo wifi --scan
+1) Bbox-A90014 (187dB)
+2) Bbox-73F0F28C (171dB)
+3) SFR_AE80 (168dB)
+4) freebox_LEATI (168dB)
+5) Adrience (189dB)
 ```
-Each access point config informations are stored in a text database file located
-in _~/.wifi/wifi.db_. Its encrypted password is saved in a standalone file conventionally 
-named _~/.wifi/private/\<NAME\>_.
 
-## Note
-This script was intended to be used on an OpenBSD laptop, connecting
-to ipv4 networks. That being said, it should work on several unix systems
-as well as ipv6 networks with a few efforts. Thanks to my friend Tamentis
-for his help on this projects.
+## Additional notes
+Access points config informations are stored in a json file located in 
+_~/.wifi/access_points.json_ while their encrypted password is saved in 
+a standalone file conventionally named _~/.wifi/passwords/\<ALIAS\>.gpg_.
+
+Thanks to my friend Tamentis for his help on this project.
