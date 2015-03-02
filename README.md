@@ -19,7 +19,7 @@ wifi is a secure wifi network manager designed for OpenBSD.
 First, you have to create the necessary folders, database file and generate the GnuPG key (default: _~/.wifi_). Hopefully, everything is done automatically:
 
 ```sh
-$ wifi -i
+$ wifi --init
 Directory structure: done
 Database: done
 Master password:
@@ -29,7 +29,7 @@ GnuPG: done
 
 ## Usage
 ```sh
-$ wifi -h
+$ wifi --help
 Manage Wifi access points.
 
 Usage:
@@ -55,26 +55,26 @@ Options:
 
 ### Flow
 ```sh
-$ wifi -a ACCESS_POINT1
+$ wifi --add ACCESS_POINT1
 Password:
 Access point ACCESS_POINT1 addedd successfully
 
-$ wifi -a ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1 8.8.8.8
+$ wifi --add ACCESS_POINT2 10.0.0.5 255.255.255.0 10.0.0.1 8.8.8.8
 Password:
 Access point ACCESS_POINT2 added successfully
 
-$ wifi -l
+$ wifi --list
 1) ACCESS_POINT1
 2) ACCESS_POINT2
 
-$ sudo wifi -c ACCESS_POINT1
+$ sudo wifi --connect ACCESS_POINT1
 Master password:
 Connected to ACCESS_POINT1
 
-$ wifi -d ACCESS_POINT1
+$ wifi --delete ACCESS_POINT1
 Access point ACCESS_POINT1 deleted sucessfully
 
-$ sudo wifi -s
+$ sudo wifi --scan
 1) Bbox-A90014 (187dB)
 2) Bbox-73F0F28C (171dB)
 3) SFR_AE80 (168dB)
