@@ -230,17 +230,6 @@ def main():
 
     """ Main function. """
 
-    if args['<ip>']:
-        try:
-            for i in [args['<ip>'], args['<netmask>'], args['<dns>']]:
-                ipaddress.ip_address(i)
-            if not re.match("^[\.A-Za-z0-9_-]*$", args['<gateway>']):
-                raise
-        except:
-            print('Error: invalid network configuration')
-            exit(1)
-
-    # Core
     if args['--init']:
         init_components()
     elif args['--scan']:
@@ -267,4 +256,21 @@ def main():
 
 if __name__ == "__main__":
     args = docopt(__doc__, version='wifi 0.2')
+    if args['<ip>']:
+        try:
+            for i in [args['<ip>'], args['<netmask>'], args['<dns>']]:
+                ipaddress.ip_address(i)
+            try:
+                ipaddress.ip_address(args['gateway'])
+            except:
+                if args['<gateway>'][-1] == ".":
+                    args['<gateway>'] == args['<gateway>'][:-1]
+                vh = re.compile("(?![-\.])[A-Za-z\d\.-]{1,63}(?<!-)$")
+                if not re.match(vh, args['<gateway>']) or \
+                    len(args['<gateway>']) > 255:
+                    raise
+        except:
+            print('Error: invalid network configuration')
+            exit(1)
+
     main()
