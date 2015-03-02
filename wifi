@@ -60,19 +60,13 @@ def init_components():
             print('Error: Directory structure: permission denied')
         exit(1)
 
-    try:
-        f = open(dbfile, 'w')
-        f.write('{}')
-        print('Database: done')
-    except IOError:
-        print('Database: permission denied')
-        exit(1)
-    try:
-        passmgr = PasswordManager()
-        passmgr.genkey()
-        print('GnuPG: done')
-    except:
-        print('GnuPG: failed')
+    f = open(dbfile, 'w')
+    f.write('{}')
+    print('Database: done')
+
+    passmgr = PasswordManager()
+    passmgr.genkey()
+    print('GnuPG: done')
 
 
 def connect(passwd, ap):
