@@ -217,7 +217,7 @@ class DatabaseManager(object):
         """ Fetch configuration associatied to an alias. """
         return self.db[args['<alias>']]
 
-    def save(self, count=3):
+    def save(self):
         """ Remove or add a database entry. """
         if args['--delete']:
             del self.db[args['<alias>']]
