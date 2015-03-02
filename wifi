@@ -109,11 +109,11 @@ def connect(passwd, ap):
                 print('Error: timeout')
 
 
-def scan():
+def scan(count=1):
 
     """ Scan wifi networks. """
 
-    results = Popen("ifconfig", myif, "scan", stdout=PIPE, shell=True)
+    results = Popen("ifconfig " + myif + " scan", stdout=PIPE, shell=True)
     results = str(results.stdout.read(), 'utf-8').split('\n')
 
     for i in results:
@@ -123,7 +123,8 @@ def scan():
             nwid = i[0].strip().replace('nwid ', '')
             if nwid == '""':
                 nwid = '_unknown'
-            print(nwid + ' (' + att + ')')
+            print(str(count) + ') ' + nwid + ' (' + att + ')')
+            count += 1
 
 
 class PasswordManager(object):
@@ -277,8 +278,8 @@ if __name__ == "__main__":
         except:
             print('Error: invalid network configuration')
             exit(1)
-    if args['--connect'] and os.getenv('USER') != 'root':
-        print('Error: --connect should be run as root')
+    if (args['--connect'] or args['--scan']) and os.getenv('USER') != 'root':
+        print('Error: this command should be run as root')
         exit(1)
 
     main()

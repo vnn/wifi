@@ -1,6 +1,6 @@
 wifi
 ====
-wifi is a secure wifi network manager for OpenBSD.
+wifi is a secure wifi network manager designed for OpenBSD.
 
 ## Features
 * Connect to a list of registered access points
@@ -28,7 +28,6 @@ GnuPG: done
 ```
 
 ## Usage
-
 ```sh
 $ wifi -h
 Manage Wifi access points.
@@ -74,10 +73,18 @@ Connected to ACCESS_POINT1
 
 $ wifi -d ACCESS_POINT1
 Access point ACCESS_POINT1 deleted sucessfully
+
+$ sudo wifi -s
+1) Bbox-A90014 (187dB)
+2) Bbox-73F0F28C (171dB)
+3) SFR_AE80 (168dB)
+4) freebox_LEATI (168dB)
+5) Adrience (189dB)
 ```
 
 ## Additional notes
-Each access point config informations are stored in a json database file located
-in _~/.wifi/access_points.json_. Its encrypted password is saved in a standalone file conventionally named _~/.wifi/private/\<ALIAS\>.gpg_. 
+Access points config informations are stored in a json file located in 
+_~/.wifi/access_points.json_ while their encrypted password is saved in 
+a standalone file conventionally named _~/.wifi/passwords/\<ALIAS\>.gpg_.
 
 Thanks to my friend Tamentis for his help on this project.
