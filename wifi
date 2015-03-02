@@ -24,6 +24,7 @@ Options:
   -s --scan      Show the results of an access point scan.
 """
 
+import errno
 from getpass import getpass
 import ipaddress
 import json
@@ -52,14 +53,18 @@ def init_components():
     try:
         os.makedirs(pwdir, stat.S_IRWXU)
         print('Directory structure: done')
-    except:
-        print('Directory structure: permission denied')
+    except IOError:
+        if os.path.isdir(pwdir):
+            print('Error: components already initialized')
+        else:
+            print('Error: Directory structure: permission denied')
         exit(1)
+
     try:
         f = open(dbfile, 'w')
         f.write('{}')
         print('Database: done')
-    except:
+    except IOError:
         print('Database: permission denied')
         exit(1)
     try:
