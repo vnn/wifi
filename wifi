@@ -24,7 +24,6 @@ Options:
   -s --scan      Show the results of an access point scan.
 """
 
-import errno
 from getpass import getpass
 import ipaddress
 import json

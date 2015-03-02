@@ -16,7 +16,7 @@ wifi is a secure wifi network manager designed for OpenBSD.
  * requests: https://pypi.python.org/pypi/requests
 
 ## Installation
-Edit the script and replace 'iwn0' (line 45), with your wifi network interface. Then, use the *-i* argument to create necessary folders, json database and generate the GnuPG private key:
+Edit the script and replace 'iwn0' (line 45), with your wifi network interface. Then, use the *--init* argument to create necessary folders, json database and generate the GnuPG private key:
 
 ```sh
 $ wifi --init
