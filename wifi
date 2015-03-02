@@ -4,9 +4,9 @@
 Manage Wifi access points.
 
 Usage:
-  wifi --add <nwid> [(<ip> <netmask> <gateway> <dns>)]
-  wifi --delete <nwid>
-  wifi --connect <nwid>
+  wifi --add <alias> <nwid> [(<ip> <netmask> <gateway> <dns>)]
+  wifi --delete <alias>
+  wifi --connect <alias>
   wifi --list
   wifi --scan
   wifi --init
@@ -16,10 +16,12 @@ Usage:
 Options:
   -h --help      Show this screen.
   -v --version   Show version.
+  -i --init      Initialize required files.
   -a --add       Add an access point.
   -d --delete    Delete ean access point.
   -c --connect   Connect to an access point.
   -l --list      List available access points.
+  -s --scan      Show the results of an access point scan.
 """
 
 from getpass import getpass
@@ -60,7 +62,7 @@ def init_components():
         print('Database: permission denied')
         exit(1)
     try:
-        passmgr = PasswordManager(conf)
+        passmgr = PasswordManager()
         passmgr.genkey()
         print('GnuPG: done')
     except:
@@ -151,14 +153,14 @@ class PasswordManager(object):
 
     def decrypt(self, passwd=''):
         """ Decrypt a password """
-        for i in open(self.private + args['<nwid>'] + '.gpg'):
+        for i in open(conf['pwdir'] + args['<nwid>'] + '.gpg'):
             passwd += i
         self.passwd = self.gpg.decrypt(passwd, passphrase=self.master)
         self.passwd = str(self.passwd)
 
-    def delete(self):
+    def delete(self, nconf):
         """ delete a password """
-        os.remove(self.private + args['<nwid>'] + '.gpg')
+        os.remove(conf['pwdir'] + nconf['nwid'] + '.gpg')
 
     def genkey(self):
         input_data = self.gpg.gen_key_input(key_length=2048,
@@ -172,11 +174,10 @@ class DatabaseManager(object):
     This class handles all database operations.
     """
 
-    def __init__(self, dbfile):
-        with open(dbfile) as fp:
+    def __init__(self):
+        with open(conf['dbfile']) as fp:
             self.db = json.load(fp)
         self.dbkeys = sorted(self.db.keys())
-        self.dbfile = dbfile
 
     def list_entries(self, count=0):
         """ List available database entries. """
@@ -188,18 +189,13 @@ class DatabaseManager(object):
     def check(self, registered=False):
         """ Lookup for valid entry in database. """
         try:
-            self.db[args['<nwid>']]
+            self.db[args['<alias>']]
             registered = True
         except:
-            try:
-                if int(args['<nwid>']) <= len(self.db.keys()):
-                    args['<nwid>'] = self.dbkeys[int(args['<nwid>'])]
-                    registered = True
-            except:
                 pass
 
         if args['--add'] and registered:
-            print('Error: access point already registered')
+            print('Error: access point with same alias already registered')
             exit(1)
 
         if (args['--connect'] or args['--delete']) and not registered:
@@ -207,20 +203,20 @@ class DatabaseManager(object):
             exit(1)
 
     def get_entry(self):
-        return self.db[args['<nwid>']]
+        return self.db[args['<alias>']]
 
     def save(self, count=3):
         """ Remove or add a database entry. """
         if args['--delete']:
-            del self.db[args['<nwid>']]
+            del self.db[args['<alias>']]
         elif args['--add']:
-            newentry = {args['<nwid>']: {}}
+            newentry = {args['<alias>']: {'nwid': args['nwid']}}
             if args['<ip>']:
                 for i in ['ip', 'netmask', 'gateway', 'dns']:
-                    newentry[args['<nwid>']][i] = args['<' + i + '>']
+                    newentry[args['<alias>']][i] = args['<' + i + '>']
             self.db.update(newentry)
-        with open(self.dbfile, 'w') as fp:
-            json.dump(self.db, fp, indent=4)
+        with open(conf['dbfile'], 'w') as fp:
+            json.dump(self.db, fp, indent=4, sort_keys=True)
         print('Done')
 
 
@@ -257,7 +253,7 @@ def main():
             db.save()
         elif args['--delete']:
             db.check()
-            passmgr.delete()
+            passmgr.delete(db.get_entry())
             db.save()
 
 
