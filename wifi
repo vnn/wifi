@@ -29,7 +29,7 @@ import ipaddress
 import json
 import os
 import re
-import subprocess
+from subprocess import call, Popen, DEVNULL, PIPE
 import stat
 
 from docopt import docopt
@@ -37,25 +37,24 @@ import gnupg
 import requests
 
 
-conf = {
-    'basedir': os.path.expanduser('~/.wifi/'),
-    'dbfile': os.path.expanduser('~/.wifi/access_points.db'),
-    'pwdir': os.path.expanduser('~/.wifi/passwords/'),
-    'id': os.getlogin() + '@' + os.uname()[1],
-    'if': 'iwn0'  # modify this to fit your needs
-}
+# Config
+basedir = os.path.expanduser('~/.wifi/')
+pwdir = basedir + 'passwords/'
+dbfile = basedir + 'access_points.db'
+receipt = os.getlogin() + '@' + os.uname()[1]
+myif = 'iwn0'  # Change this to fit your needs
 
 
 def init_components():
     """ Create and install all required components (one-time) """
     try:
-        os.makedirs(conf['pwdir'], stat.S_IRWXU)
+        os.makedirs(pwdir, stat.S_IRWXU)
         print('Directory structure: done')
     except:
         print('Directory structure: permission denied')
         exit(1)
     try:
-        f = open(conf['dbfile'], 'w')
+        f = open(dbfile, 'w')
         f.write('{}')
         print('Database: done')
     except:
@@ -69,22 +68,22 @@ def init_components():
         print('GnuPG: failed')
 
 
-def connect(passwd, nconf):
+def connect(passwd, ap):
     """ Connect to a wifi access point. """
     def cmd(command):
-        subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        call(command, stdout=DEVNULL, stderr=DEVNULL)
 
     # setup interface/route/dns
-    cmd(["ifconfig", interface, "down"])
-    cmd(['ifconfig', interface, 'nwid', args['<nwid>'], 'wpakey', passwd])
+    cmd(["ifconfig", myif, "down"])
+    cmd(['ifconfig', myif, 'nwid', ap['nwid'], 'wpakey', passwd])
 
-    if nconf['ip']:
-        cmd(['ifconfig', interface, 'inet', nconf['ip'], 'netmask', nconf['netmask']])
-        cmd(['route', 'add', 'default', nconf['gateway']])
+    if ap['ip']:
+        cmd(['ifconfig', myif, 'inet', ap['ip'], 'netmask', ap['netmask']])
+        cmd(['route', 'add', 'default', ap['gateway']])
         with open('/etc/resolv.conf', 'w') as fp:
-            fp.write(nconf['dns'])
+            fp.write(ap['dns'])
     else:
-        cmd(['dhclient', interface])
+        cmd(['dhclient', myif])
 
     # restart firewall and flush rules
     cmd(["pfctl", "-d"])
@@ -101,13 +100,12 @@ def connect(passwd, nconf):
                 print('Error: timeout')
 
 
-def scan(interface):
+def scan():
     """ Scan wifi networks. """
-    # have to ifconfig down because of a bug in iwn driver on OpenBSD 5.6
-    # hopefully that will be fixed on 5.7
-    # if you dont need this, just comment the line below
-    subprocess.call(["ifconfig", interface, "down"])
-    results = subprocess.Popen("ifconfig iwn0 scan", stdout=subprocess.PIPE, shell=True)
+    # I HAVE to ifconfig down because of a bug in iwn driver on OpenBSD 5.6
+    # You dont need this, so just comment the line below
+    call(["ifconfig", myif, "down"])
+    results = Popen("ifconfig", myif, "scan", stdout=PIPE, shell=True)
     results = str(results.stdout.read(), 'utf-8').split('\n')
 
     for i in results:
@@ -127,7 +125,7 @@ class PasswordManager(object):
     """
 
     def __init__(self):
-        self.gpg = gnupg.GPG(gnupghome=conf['basedir'])
+        self.gpg = gnupg.GPG(gnupghome=basedir)
         self.gpg.encoding = 'utf-8'
         self._prompt()
 
@@ -138,7 +136,10 @@ class PasswordManager(object):
         elif args['--connect']:
             self.master = getpass('Master Password: ')
         elif args['--init']:
-            pprompt = lambda: (getpass('Master password: '), getpass('Retype password: '))
+            pprompt = lambda: (
+                getpass('Master password: '),
+                getpass('Retype password: ')
+            )
             self.master, master2 = pprompt()
             while self.master != master2:
                 print('Passwords do not match. Try again')
@@ -146,25 +147,25 @@ class PasswordManager(object):
 
     def encrypt(self):
         """ Encrypt a password """
-        self.passwd = self.gpg.encrypt(self.passwd, conf['id'])
+        self.passwd = self.gpg.encrypt(self.passwd, receipt)
         self.passwd = str(self.passwd)
-        with open(conf['pwdir'] + args['<nwid>'] + '.gpg', 'w') as fp:
+        with open(pwdir + args['<nwid>'] + '.gpg', 'w') as fp:
             fp.write(self.passwd)
 
     def decrypt(self, passwd=''):
         """ Decrypt a password """
-        for i in open(conf['pwdir'] + args['<nwid>'] + '.gpg'):
+        for i in open(pwdir + args['<nwid>'] + '.gpg'):
             passwd += i
         self.passwd = self.gpg.decrypt(passwd, passphrase=self.master)
         self.passwd = str(self.passwd)
 
-    def delete(self, nconf):
+    def delete(self, ap):
         """ delete a password """
-        os.remove(conf['pwdir'] + nconf['nwid'] + '.gpg')
+        os.remove(pwdir + ap['nwid'] + '.gpg')
 
     def genkey(self):
-        input_data = self.gpg.gen_key_input(key_length=2048,
-           name_email=conf['id'], passphrase=self.master)
+        input_data = self.gpg.gen_key_input(
+            key_length=2048, name_email=receipt, passphrase=self.master)
         key = self.gpg.gen_key(input_data)
 
 
@@ -175,7 +176,7 @@ class DatabaseManager(object):
     """
 
     def __init__(self):
-        with open(conf['dbfile']) as fp:
+        with open(dbfile) as fp:
             self.db = json.load(fp)
         self.dbkeys = sorted(self.db.keys())
 
@@ -215,7 +216,7 @@ class DatabaseManager(object):
                 for i in ['ip', 'netmask', 'gateway', 'dns']:
                     newentry[args['<alias>']][i] = args['<' + i + '>']
             self.db.update(newentry)
-        with open(conf['dbfile'], 'w') as fp:
+        with open(dbfile, 'w') as fp:
             json.dump(self.db, fp, indent=4, sort_keys=True)
         print('Done')
 
