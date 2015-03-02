@@ -35,19 +35,16 @@ import gnupg
 import requests
 
 
-def parse_conf():
-    """ Return config file values """
-    conf = {
-        'basedir' : os.path.expanduser('~/.wifi/'),
-        'dbfile'  : os.path.expanduser('~/.wifi/access_points.db'),
-        'pwdir'   : os.path.expanduser('~/.wifi/passwords/'),
-        'id'      : os.getlogin() + '@' + os.uname()[1],
-        'if'      : 'iwn0' # modify this to fit your needs
-    }
-    return conf
+conf = {
+    'basedir': os.path.expanduser('~/.wifi/'),
+    'dbfile': os.path.expanduser('~/.wifi/access_points.db'),
+    'pwdir': os.path.expanduser('~/.wifi/passwords/'),
+    'id': os.getlogin() + '@' + os.uname()[1],
+    'if': 'iwn0'  # modify this to fit your needs
+}
 
 
-def init_components(conf):
+def init_components():
     """ Create and install all required components (one-time) """
     try:
         os.makedirs(conf['pwdir'], stat.S_IRWXU)
@@ -70,7 +67,7 @@ def init_components(conf):
         print('GnuPG: failed')
 
 
-def connect(passwd, interface, conf):
+def connect(passwd, nconf):
     """ Connect to a wifi access point. """
     def cmd(command):
         subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -79,11 +76,11 @@ def connect(passwd, interface, conf):
     cmd(["ifconfig", interface, "down"])
     cmd(['ifconfig', interface, 'nwid', args['<nwid>'], 'wpakey', passwd])
 
-    if args['<ip>']:
-        cmd(['ifconfig', interface, 'inet', args['<ip>'], 'netmask', args['<netmask>']])
-        cmd(['route', 'add', 'default', args['gateway']])
+    if nconf['ip']:
+        cmd(['ifconfig', interface, 'inet', nconf['ip'], 'netmask', nconf['netmask']])
+        cmd(['route', 'add', 'default', nconf['gateway']])
         with open('/etc/resolv.conf', 'w') as fp:
-            fp.write('nameserver ' + args['dns'])
+            fp.write(nconf['dns'])
     else:
         cmd(['dhclient', interface])
 
@@ -127,10 +124,8 @@ class PasswordManager(object):
     This class handles password related operations.
     """
 
-    def __init__(self, conf):
-        self.conf = conf
-        self.private = self.conf['pwdir']
-        self.gpg = gnupg.GPG(gnupghome=self.conf['basedir'])
+    def __init__(self):
+        self.gpg = gnupg.GPG(gnupghome=conf['basedir'])
         self.gpg.encoding = 'utf-8'
         self._prompt()
 
@@ -149,9 +144,9 @@ class PasswordManager(object):
 
     def encrypt(self):
         """ Encrypt a password """
-        self.passwd = self.gpg.encrypt(self.passwd, self.conf['id'])
+        self.passwd = self.gpg.encrypt(self.passwd, conf['id'])
         self.passwd = str(self.passwd)
-        with open(self.private + args['<nwid>'] + '.gpg', 'w') as fp:
+        with open(conf['pwdir'] + args['<nwid>'] + '.gpg', 'w') as fp:
             fp.write(self.passwd)
 
     def decrypt(self, passwd=''):
@@ -167,7 +162,7 @@ class PasswordManager(object):
 
     def genkey(self):
         input_data = self.gpg.gen_key_input(key_length=2048,
-            name_email=self.conf['id'], passphrase=self.master)
+           name_email=conf['id'], passphrase=self.master)
         key = self.gpg.gen_key(input_data)
 
 
@@ -219,7 +214,7 @@ class DatabaseManager(object):
         if args['--delete']:
             del self.db[args['<nwid>']]
         elif args['--add']:
-            newentry = { args['<nwid>']: {} }
+            newentry = {args['<nwid>']: {}}
             if args['<ip>']:
                 for i in ['ip', 'netmask', 'gateway', 'dns']:
                     newentry[args['<nwid>']][i] = args['<' + i + '>']
@@ -233,9 +228,9 @@ def main():
     # verify args
     if args['<ip>']:
         try:
-            ipaddress.IPv4Address(args['<ip>'])
-            ipaddress.IPv4Address(args['<netmask>'])
-            ipaddress.IPv4Address(args['<dns>'])
+            ipaddress.ip_address(args['<ip>'])
+            ipaddress.ip_address(args['<netmask>'])
+            ipaddress.ip_address(args['<dns>'])
             if not re.match("^[\.A-Za-z0-9_-]*$", args['<gateway>']):
                 raise
         except:
@@ -243,32 +238,28 @@ def main():
             exit(1)
 
     # Core
-    conf = parse_conf()
-
     if args['--init']:
-        init_components(conf)
-        exit(0)
+        init_components()
     elif args['--scan']:
-        scan(conf['if'])
-        exit(0)
-
-    db = DatabaseManager(conf['dbfile'])
-    passmgr = PasswordManager(conf)
-
-    if args['--list']:
+        scan()
+    elif args['--list']:
+        db = DatabaseManager()
         db.list_entries()
-    elif args['--connect']:
+    else:
+        db = DatabaseManager()
+        passmgr = PasswordManager()
         db.check()
-        passmgr.decrypt()
-        connect(passmgr.passwd, conf['if'], db.get_entry())
-    elif args['--add']:
-        db.check()
-        passmgr.encrypt()
-        db.save()
-    elif args['--delete']:
-        db.check()
-        passmgr.delete()
-        db.save()
+
+        if args['--connect']:
+            passmgr.decrypt()
+            connect(passmgr.passwd, db.get_entry())
+        elif args['--add']:
+            passmgr.encrypt()
+            db.save()
+        elif args['--delete']:
+            db.check()
+            passmgr.delete()
+            db.save()
 
 
 if __name__ == "__main__":
