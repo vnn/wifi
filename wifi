@@ -45,108 +45,116 @@ receipt = os.getlogin() + '@' + os.uname()[1]
 myif = 'iwn0'  # Change this to fit your needs
 
 
-class PasswordManager(object):
+def database(action):
 
-    """ This class handles password related operations. """
+    """ This function handles all database operations. """
 
-    def __init__(self):
-        self.gpg = gnupg.GPG(gnupghome=basedir)
-        self.gpg.encoding = 'utf-8'
+    # Fetch database.
+    with open(dbfile) as fp:
+        db = json.load(fp)
+    dbkeys = sorted(db.keys())
 
-    def genkey(self):
-        """ Generate a new GnuPG private key. """
+    # List available database entries and exit.
+    if action == 'list':
+        print('Available access points:')
+        count = 0
+        for i in range(len(db.keys())):
+            print(str(count + 1) + ') ' + dbkeys[count])
+            count += 1
+        exit(0)
+
+    # Lookup for an alias occurency in the database.
+    try:
+        is_valid = db[args['<alias>']]
+        if args['--add']:
+            print('Error: alias already registered')
+            exit(1)
+    except:
+        if (args['--connect'] or args['--delete']):
+            print('Error: unknown alias')
+            exit(1)
+
+    # Return current entry values from database as a dict.
+    if action == 'get_conf':
+        return db[args['<alias>']]
+
+    # Remove current entry from database.
+    elif action == 'delete':
+        del db[args['<alias>']]
+        _save()
+
+    # Add a new entry into database.
+    elif action == 'add':
+        newentry = {args['<alias>']: {'nwid': args['<nwid>']}}
+        if args['<ip>']:
+            for i in ['ip', 'netmask', 'gateway', 'dns']:
+                newentry[args['<alias>']][i] = args['<' + i + '>']
+        db.update(newentry)
+        _save()
+
+    def _save():
+        """ This function writes changes to the database. """
+        with open(dbfile, 'w') as fp:
+            json.dump(db, fp, indent=4, sort_keys=True)
+            print('Done')
+
+
+def password(action):
+
+    """ This function handles password related operations. """
+
+    gpg = gnupg.GPG(gnupghome=basedir)
+    gpg.encoding = 'utf-8'
+
+    # Generate a new GnuPG private key.
+    if action == 'genkey':
         try:
             pprompt = lambda: (
                 getpass('Master password: '),
                 getpass('Retype password: ')
             )
-            self.master, master2 = pprompt()
-            while self.master != master2:
+            master, master2 = pprompt()
+            while master != master2:
                 print('Passwords do not match. Try again')
-                self.master, master2 = pprompt()
+                master, master2 = pprompt()
         except KeyboardInterrupt:
             print()
             exit()
-        input_data = self.gpg.gen_key_input(
-            key_length=4096, name_email=receipt, passphrase=self.master)
-        key = self.gpg.gen_key(input_data)
 
-    def encrypt(self):
-        """ Encrypt a password. """
-        try:
-            self.passwd = getpass('Password: ')
-        except KeyboardInterrupt:
-            print()
-            exit()
-        self.gpg.encrypt(
-            self.passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
+        input_data = gpg.gen_key_input(
+            key_length=4096, name_email=receipt, passphrase=master)
+        key = gpg.gen_key(input_data)
 
-    def decrypt(self):
-        """ Decrypt a password. """
+    # Encrypt a password.
+    elif action == 'add':
         try:
-            self.master = getpass('Master Password: ')
+            passwd = getpass('Password: ')
         except KeyboardInterrupt:
             print()
             exit()
+
+        gpg.encrypt(passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
+
+    # Decrypt a password.
+    elif action == 'decrypt':
+        try:
+            master = getpass('Master Password: ')
+        except KeyboardInterrupt:
+            print()
+            exit()
+
         with open(pwdir + args['<alias>'] + '.gpg', 'rb') as fp:
-            self.passwd = str(self.gpg.decrypt_file(fp, passphrase=self.master))
-        if not self.passwd:
+            passwd = str(gpg.decrypt_file(fp, passphrase=master))
+
+        if not passwd:
             print("Invalid master password")
             exit()
+        else:
+            return passwd
 
-    def delete(self):
-        """ Delete a password. """
+    # Delete a password.
+    elif action == 'delete':
         os.remove(pwdir + args['<alias>'] + '.gpg')
-
-
-class DatabaseManager(object):
-
-    """ This class handles all database operations. """
-
-    def __init__(self):
-        with open(dbfile) as fp:
-            self.db = json.load(fp)
-        self.dbkeys = sorted(self.db.keys())
-
-    def listall(self, count=0):
-        """ List available database entries. """
-        print('Available access points:')
-        for i in range(len(self.db.keys())):
-            print(str(count + 1) + ') ' + self.dbkeys[count])
-            count += 1
-
-    def check(self, registered=False):
-        """ Lookup for valid entry in database. """
-        try:
-            registered = self.db[args['<alias>']]
-        except:
-                pass
-        if args['--add'] and registered:
-            print('Error: access point with same alias already registered')
-            exit(1)
-        if (args['--connect'] or args['--delete']) and not registered:
-            print('Error: unknown access point')
-            exit(1)
-
-    def delete(self):
-        """ Remove a database entry. """
-        del self.db[args['<alias>']]
-        self._save()
-
-    def add(self):
-        """ Add a database entry. """
-        newentry = {args['<alias>']: {'nwid': args['<nwid>']}}
-        if args['<ip>']:
-            for i in ['ip', 'netmask', 'gateway', 'dns']:
-                newentry[args['<alias>']][i] = args['<' + i + '>']
-        self.db.update(newentry)
-        self._save()
-
-    def _save(self):
-        """ Save database. """
-        with open(dbfile, 'w') as fp:
-            json.dump(self.db, fp, indent=4, sort_keys=True)
-        print('Done')
 
 
 def init():
@@ -175,10 +183,6 @@ def init():
 def connect(passwd, ap):
 
     """ Connect to a wifi access point. """
-
-    if os.getenv('USER') != 'root':
-        print('Error: --connect should be run as root')
-        exit(1)
 
     def cmd(command):
         call(command, stdout=DEVNULL, stderr=DEVNULL)
@@ -216,48 +220,24 @@ def scan(count=1):
     """ Scan wifi networks. """
 
     results = Popen("ifconfig " + myif + " scan", stdout=PIPE, shell=True)
-    results = str(results.stdout.read(), 'utf-8').split('\n')
 
-    for i in results:
+    for i in str(results.stdout.read(), 'utf-8').split('\n'):
         if re.match("^nwid", i.strip()):
             i = i.split(' chan')
             att = i[1].split(' ')[4]
             nwid = i[0].strip().replace('nwid ', '')
+
             if nwid == '""':
                 nwid = '_unknown'
+
             print(str(count) + ') ' + nwid + ' (' + att + ')')
             count += 1
 
 
-def main():
+def check_args():
 
-    """ Main function. """
+    """ Arguments extra checks. """
 
-    if args['--init']:
-        init()
-    elif args['--scan']:
-        scan()
-    elif args['--list']:
-        db = DatabaseManager()
-        db.listall()
-    else:
-        db = DatabaseManager()
-        passmgr = PasswordManager()
-        db.check()
-
-        if args['--connect']:
-            passmgr.decrypt()
-            connect(passmgr.passwd, db[args['<alias>']])
-        elif args['--add']:
-            passmgr.encrypt()
-            db.add()
-        elif args['--delete']:
-            passmgr.delete()
-            db.delete()
-
-
-if __name__ == "__main__":
-    args = docopt(__doc__, version='wifi 0.2')
     if args['<ip>']:
         try:
             for i in [args['<ip>'], args['<netmask>'], args['<dns>']]:
@@ -274,8 +254,34 @@ if __name__ == "__main__":
         except:
             print('Error: invalid network configuration')
             exit(1)
-    if (args['--connect'] or args['--scan']) and os.getenv('USER') != 'root':
+
+    elif (args['--connect'] or args['--scan']) and os.getenv('USER') != 'root':
         print('Error: this command should be run as root')
         exit(1)
 
+
+def main():
+
+    """ Main function. """
+
+    check_args()
+
+    if args['--init']:
+        init()
+    elif args['--scan']:
+        scan()
+    elif args['--list']:
+        database('list')
+    elif args['--connect']:
+        connect(password('decrypt'), database('get_conf'))
+    elif args['--add']:
+        password('add')
+        database('add')
+    elif args['--delete']:
+        password('delete')
+        database('delete')
+
+
+if __name__ == "__main__":
+    args = docopt(__doc__, version='wifi 0.2')
     main()
