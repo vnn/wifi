@@ -144,7 +144,7 @@ def password(action):
         with open(pwdir + args['<alias>'] + '.gpg', 'rb') as f:
             pw = str(gpg.decrypt_file(f, passphrase=master))
 
-        if not passwd:
+        if not pw:
             print("Invalid master password")
             exit()
         else:
@@ -216,16 +216,18 @@ def scan():
     """ Scan wifi networks. """
 
     results = Popen("ifconfig " + myif + " scan", stdout=PIPE, shell=True)
+    ap_list = []
 
-    for idx, i in enumerate(str(results.stdout.read(), 'utf-8').split('\n')):
+    for i in str(results.stdout.read(), 'utf-8').split('\n'):
         if re.match("^nwid", i.strip()):
             i = i.split(' chan')
-            values = [i[1].split(' ')[4], i[0].strip().replace('nwid ', '')]
+            ap_list.append((i[0].strip().replace('nwid ', ''), i[1].split(' ')[4]))
 
-            if values[1] == '""':
-                values[1] = '_unknown'
+    sorted_list = sorted(ap_list, key=lambda ap: ap[1], reverse=True)
 
-            print(str(idx - 6) + ') ' + values[1] + ' (' + values[0] + ')')
+    print('{} available access points:'.format(str(len(sorted_list))))
+    for idx, i in enumerate(sorted_list, start=1):
+        print(i[0].replace('""', '_') + ' (' + i[1] + ')')
 
 
 def check_args():
