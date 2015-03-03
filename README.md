@@ -77,11 +77,18 @@ $ wifi --delete office
 Done
 
 $ sudo wifi --scan
-1) Bbox-A90014 (187dB)
-2) Bbox-73F0F28C (171dB)
-3) SFR_AE80 (168dB)
-4) freebox_LEATI (168dB)
-5) Adrience (189dB)
+11 available access points:
+FreeWifi (204dB)
+freebox_IMFGCN (203dB)
+FreeWifi_secure (203dB)
+Adrience (201dB)
+Adrience (192dB)
+Bbox-A90014 (187dB)
+Vancesslas (179dB)
+FreeWifi_secure (178dB)
+Bbox-9BD917 (170dB)
+freebox (168dB)
+FreeWifi (168dB)
 ```
 
 ## Additional notes
