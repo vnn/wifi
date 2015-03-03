@@ -70,7 +70,7 @@ def database(action):
             print('Error: alias already registered')
             exit(1)
     except:
-        if (args['--connect'] or args['--delete']):
+        if args['--connect'] or args['--delete']:
             print('Error: unknown alias')
             exit(1)
 
@@ -96,7 +96,6 @@ def database(action):
         """ This function writes changes to the database. """
         with open(dbfile, 'w') as fp:
             json.dump(db, fp, indent=4, sort_keys=True)
-            print('Done')
 
 
 def password(action):
@@ -180,7 +179,7 @@ def init():
     print('GnuPG: done')
 
 
-def connect(passwd, ap):
+def connect(ap, passwd):
 
     """ Connect to a wifi access point. """
 
@@ -273,13 +272,13 @@ def main():
     elif args['--list']:
         database('list')
     elif args['--connect']:
-        connect(password('decrypt'), database('get_conf'))
+        connect(database('get_conf'), password('decrypt'))
     elif args['--add']:
-        password('add')
         database('add')
+        password('add')
     elif args['--delete']:
-        password('delete')
         database('delete')
+        password('delete')
 
 
 if __name__ == "__main__":
