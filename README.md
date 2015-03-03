@@ -16,7 +16,7 @@ wifi is a secure wifi network manager designed for OpenBSD.
  * requests: https://pypi.python.org/pypi/requests
 
 ## Installation
-Edit the script and replace 'iwn0' (line 45), with your wifi network interface. Then, use the *--init* argument to create necessary folders, json database and generate the GnuPG private key:
+Edit the script and replace **iwn0** (line 45) with your wifi network interface. Then, use the **--init** argument to create necessary folders, json database and generate the GnuPG private key:
 
 ```sh
 $ wifi --init
@@ -54,7 +54,8 @@ Options:
   -s --scan      Show the results of an access point scan.
 ```
 
-Here is an overview of the flow:
+#### Flow
+Here is an overview of the user flow:
 ```sh
 $ wifi --add home ACCESS_POINT1
 Password:
@@ -84,8 +85,6 @@ $ sudo wifi --scan
 ```
 
 ## Additional notes
-Access points config informations are stored in 
-*access_points.json* while their encrypted password is written in 
-a standalone file conventionally named *\<ALIAS\>.gpg*.
+Access points config informations are stored in **access_points.json** while their password (encrypted with a 4096 bits RSA key) is written in a standalone file conventionally named **\<ALIAS\>.gpg**. 
 
 Thanks to my friend Tamentis for his help on this project.
