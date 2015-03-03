@@ -6,7 +6,7 @@ wifi is a secure wifi network manager designed for OpenBSD.
 * Connect to a list of registered access points
 * Add or delete access points
 * List all registered access points
-* Scan for available access points
+* Scan for available access points and sort results by attenuation
 * Password encryption via GnuPG
 
 ## Requirements
@@ -48,7 +48,7 @@ Options:
   -v --version   Show version.
   -i --init      Initialize required files.
   -a --add       Add an access point.
-  -d --delete    Delete ean access point.
+  -d --delete    Delete an access point.
   -c --connect   Connect to an access point.
   -l --list      List available access points.
   -s --scan      Show the results of an access point scan.
