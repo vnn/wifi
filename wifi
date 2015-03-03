@@ -83,7 +83,7 @@ def connect(passwd, ap):
     cmd(["ifconfig", myif, "down"])
     cmd(['ifconfig', myif, 'nwid', ap['nwid'], 'wpakey', passwd])
 
-    if ap['ip']:
+    if len(ap) > 2:
         cmd(['ifconfig', myif, 'inet', ap['ip'], 'netmask', ap['netmask']])
         cmd(['route', 'delete', 'default'])
         cmd(['route', 'add', 'default', ap['gateway']])
@@ -153,17 +153,14 @@ class PasswordManager(object):
 
     def encrypt(self):
         """ Encrypt a password. """
-        self.passwd = self.gpg.encrypt(self.passwd, receipt)
-        self.passwd = str(self.passwd)
-        with open(pwdir + args['<alias>'] + '.gpg', 'w') as fp:
-            fp.write(self.passwd)
+        self.gpg.encrypt(
+            self.passwd, receipt,
+            output=pwdir + args['<alias>'] + '.gpg')
 
     def decrypt(self, passwd=''):
         """ Decrypt a password. """
-        for i in open(pwdir + args['<alias>'] + '.gpg'):
-            passwd += i
-        self.passwd = self.gpg.decrypt(passwd, passphrase=self.master)
-        self.passwd = str(self.passwd)
+        with open(pwdir + args['<alias>'] + '.gpg', 'rb') as fp:
+            self.passwd = str(self.gpg.decrypt_file(fp, passphrase=self.master))
         if not self.passwd:
             print("Invalid master password")
             exit()
