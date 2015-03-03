@@ -151,13 +151,18 @@ class PasswordManager(object):
             print()
             exit()
 
+    def genkey(self):
+        """ Generate a new GnuPG private key. """
+        input_data = self.gpg.gen_key_input(
+            key_length=4096, name_email=receipt, passphrase=self.master)
+        key = self.gpg.gen_key(input_data)
+
     def encrypt(self):
         """ Encrypt a password. """
         self.gpg.encrypt(
-            self.passwd, receipt,
-            output=pwdir + args['<alias>'] + '.gpg')
+            self.passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
 
-    def decrypt(self, passwd=''):
+    def decrypt(self):
         """ Decrypt a password. """
         with open(pwdir + args['<alias>'] + '.gpg', 'rb') as fp:
             self.passwd = str(self.gpg.decrypt_file(fp, passphrase=self.master))
@@ -168,12 +173,6 @@ class PasswordManager(object):
     def delete(self):
         """ Delete a password. """
         os.remove(pwdir + args['<alias>'] + '.gpg')
-
-    def genkey(self):
-        """ Generate a new GnuPG private key. """
-        input_data = self.gpg.gen_key_input(
-            key_length=4096, name_email=receipt, passphrase=self.master)
-        key = self.gpg.gen_key(input_data)
 
 
 class DatabaseManager(object):
