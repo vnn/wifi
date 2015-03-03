@@ -115,8 +115,8 @@ def password(action):
                 print('Passwords do not match. Try again')
                 master, master2 = pprompt()
 
-            gpg.gen_key(gpg.gen_key_input(key_length=4096,
-                name_email=receipt, passphrase=master))
+            gpg.gen_key(gpg.gen_key_input(
+                key_length=4096, name_email=receipt, passphrase=master))
         except KeyboardInterrupt:
             print()
             exit()
@@ -124,8 +124,8 @@ def password(action):
     # Encrypt a password.
     elif action == 'add':
         try:
-            passwd = getpass('Password: ')
-            gpg.encrypt(passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
+            pw = getpass('Password: ')
+            gpg.encrypt(pw, receipt, output=pwdir + args['<alias>'] + '.gpg')
         except KeyboardInterrupt:
             print()
             exit()
@@ -139,13 +139,13 @@ def password(action):
             exit()
 
         with open(pwdir + args['<alias>'] + '.gpg', 'rb') as fp:
-            passwd = str(gpg.decrypt_file(fp, passphrase=master))
+            pw = str(gpg.decrypt_file(fp, passphrase=master))
 
         if not passwd:
             print("Invalid master password")
             exit()
         else:
-            return passwd
+            return pw
 
     # Delete a password.
     elif action == 'delete':
@@ -222,7 +222,7 @@ def scan():
             values = [i[1].split(' ')[4], i[0].strip().replace('nwid ', '')]
 
             if values[1] == '""':
-               values[1] = '_unknown'
+                values[1] = '_unknown'
 
             print(str(idx - 6) + ') ' + values[1] + ' (' + values[0] + ')')
 
@@ -242,7 +242,7 @@ def check_args():
                     args['<gateway>'] = args['<gateway>'][:-1]
                 vh = re.compile("(?![-\.])[A-Za-z\d\.-]{1,63}(?<!-)$")
                 if not re.match(vh, args['<gateway>']) or \
-                    len(args['<gateway>']) > 255:
+                   len(args['<gateway>']) > 255:
                     raise
         except:
             print('Error: invalid network configuration')
