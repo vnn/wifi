@@ -46,9 +46,7 @@ myif = 'iwn0'  # Change this to fit your needs
 
 
 def database(action):
-
     """ This function handles all database operations. """
-
     # Create database.
     if action == 'create':
         f = open(dbfile, 'w')
@@ -56,16 +54,15 @@ def database(action):
         return
 
     # Fetch database.
-    with open(dbfile) as fp:
-        db = json.load(fp)
-    dbkeys = sorted(db.keys())
+    with open(dbfile) as f:
+        db = json.load(f)
+        dbkeys = sorted(db.keys())
 
     # List available database entries and exit.
     if action == 'list':
-        print('Available access points:')
         for i in range(len(db.keys())):
             print(str(i + 1) + ') ' + dbkeys[i])
-        exit(0)
+        return
 
     # Lookup for an alias occurency in the database.
     try:
@@ -98,8 +95,8 @@ def database(action):
 
     def _save():
         """ This function writes changes to the database. """
-        with open(dbfile, 'w') as fp:
-            json.dump(db, fp, indent=4, sort_keys=True)
+        with open(dbfile, 'w') as f:
+            json.dump(db, f, indent=4, sort_keys=True)
 
 
 def password(action):
@@ -144,8 +141,8 @@ def password(action):
             print()
             exit()
 
-        with open(pwdir + args['<alias>'] + '.gpg', 'rb') as fp:
-            pw = str(gpg.decrypt_file(fp, passphrase=master))
+        with open(pwdir + args['<alias>'] + '.gpg', 'rb') as f:
+            pw = str(gpg.decrypt_file(f, passphrase=master))
 
         if not passwd:
             print("Invalid master password")
@@ -194,8 +191,8 @@ def connect(ap, passwd):
         cmd(['ifconfig', myif, 'inet', ap['ip'], 'netmask', ap['netmask']])
         cmd(['route', 'delete', 'default'])
         cmd(['route', 'add', 'default', ap['gateway']])
-        with open('/etc/resolv.conf', 'w') as fp:
-            fp.write('nameserver ' + ap['dns'])
+        with open('/etc/resolv.conf', 'w') as f:
+            f.write('nameserver ' + ap['dns'])
     else:
         cmd(['dhclient', myif])
 
@@ -244,8 +241,9 @@ def check_args():
             except:
                 if args['<gateway>'][-1] == ".":
                     args['<gateway>'] = args['<gateway>'][:-1]
-                vh = re.compile("(?![-\.])[A-Za-z\d\.-]{1,63}(?<!-)$")
-                if not re.match(vh, args['<gateway>']) or \
+
+                valid_host = re.compile("(?![-\.])[A-Za-z\d\.-]{1,63}(?<!-)$")
+                if not re.match(valid_host, args['<gateway>']) or \
                    len(args['<gateway>']) > 255:
                     raise
         except:
