@@ -118,8 +118,7 @@ class DatabaseManager(object):
     def check(self, registered=False):
         """ Lookup for valid entry in database. """
         try:
-            self.db[args['<alias>']]
-            registered = True
+            registered = self.db[args['<alias>']]
         except:
                 pass
         if args['--add'] and registered:
