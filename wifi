@@ -57,10 +57,8 @@ def database(action):
     # List available database entries and exit.
     if action == 'list':
         print('Available access points:')
-        count = 0
         for i in range(len(db.keys())):
-            print(str(count + 1) + ') ' + dbkeys[count])
-            count += 1
+            print(str(i + 1) + ') ' + dbkeys[i])
         exit(0)
 
     # Lookup for an alias occurency in the database.
@@ -116,23 +114,21 @@ def password(action):
             while master != master2:
                 print('Passwords do not match. Try again')
                 master, master2 = pprompt()
+
+            gpg.gen_key(gpg.gen_key_input(key_length=4096,
+                name_email=receipt, passphrase=master))
         except KeyboardInterrupt:
             print()
             exit()
-
-        input_data = gpg.gen_key_input(
-            key_length=4096, name_email=receipt, passphrase=master)
-        key = gpg.gen_key(input_data)
 
     # Encrypt a password.
     elif action == 'add':
         try:
             passwd = getpass('Password: ')
+            gpg.encrypt(passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
         except KeyboardInterrupt:
             print()
             exit()
-
-        gpg.encrypt(passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
 
     # Decrypt a password.
     elif action == 'decrypt':
@@ -204,33 +200,31 @@ def connect(ap, passwd):
     cmd(["pfctl", "-e", "-Fa", "-f/etc/pf.conf"])
 
     # check connectivity
-    for i in range(10):
+    for count in range(10):
         try:
             r = requests.get('http://www.google.fr')
             print('Connected to {}'.format(ap['nwid']))
             break
         except:
-            if i == 9:
+            if count == 9:
                 print('Error: timeout')
 
 
-def scan(count=1):
+def scan():
 
     """ Scan wifi networks. """
 
     results = Popen("ifconfig " + myif + " scan", stdout=PIPE, shell=True)
 
-    for i in str(results.stdout.read(), 'utf-8').split('\n'):
+    for idx, i in enumerate(str(results.stdout.read(), 'utf-8').split('\n')):
         if re.match("^nwid", i.strip()):
             i = i.split(' chan')
-            att = i[1].split(' ')[4]
-            nwid = i[0].strip().replace('nwid ', '')
+            values = [i[1].split(' ')[4], i[0].strip().replace('nwid ', '')]
 
-            if nwid == '""':
-                nwid = '_unknown'
+            if values[1] == '""':
+               values[1] = '_unknown'
 
-            print(str(count) + ') ' + nwid + ' (' + att + ')')
-            count += 1
+            print(str(idx - 6) + ') ' + values[1] + ' (' + values[0] + ')')
 
 
 def check_args():
