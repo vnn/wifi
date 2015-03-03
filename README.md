@@ -66,8 +66,9 @@ Password:
 Done
 
 $ wifi --list
-1) home
-2) office
+2 saved access points:
+home (ACCESS_POINT1)
+office (ACCESS_POINT2)
 
 $ sudo wifi --connect home
 Master password:
