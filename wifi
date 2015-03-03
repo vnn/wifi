@@ -45,7 +45,112 @@ receipt = os.getlogin() + '@' + os.uname()[1]
 myif = 'iwn0'  # Change this to fit your needs
 
 
-def init_components():
+class PasswordManager(object):
+
+    """ This class handles password related operations. """
+
+    def __init__(self):
+        self.gpg = gnupg.GPG(gnupghome=basedir)
+        self.gpg.encoding = 'utf-8'
+
+    def genkey(self):
+        """ Generate a new GnuPG private key. """
+        try:
+            pprompt = lambda: (
+                getpass('Master password: '),
+                getpass('Retype password: ')
+            )
+            self.master, master2 = pprompt()
+            while self.master != master2:
+                print('Passwords do not match. Try again')
+                self.master, master2 = pprompt()
+        except KeyboardInterrupt:
+            print()
+            exit()
+        input_data = self.gpg.gen_key_input(
+            key_length=4096, name_email=receipt, passphrase=self.master)
+        key = self.gpg.gen_key(input_data)
+
+    def encrypt(self):
+        """ Encrypt a password. """
+        try:
+            self.passwd = getpass('Password: ')
+        except KeyboardInterrupt:
+            print()
+            exit()
+        self.gpg.encrypt(
+            self.passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
+
+    def decrypt(self):
+        """ Decrypt a password. """
+        try:
+            self.master = getpass('Master Password: ')
+        except KeyboardInterrupt:
+            print()
+            exit()
+        with open(pwdir + args['<alias>'] + '.gpg', 'rb') as fp:
+            self.passwd = str(self.gpg.decrypt_file(fp, passphrase=self.master))
+        if not self.passwd:
+            print("Invalid master password")
+            exit()
+
+    def delete(self):
+        """ Delete a password. """
+        os.remove(pwdir + args['<alias>'] + '.gpg')
+
+
+class DatabaseManager(object):
+
+    """ This class handles all database operations. """
+
+    def __init__(self):
+        with open(dbfile) as fp:
+            self.db = json.load(fp)
+        self.dbkeys = sorted(self.db.keys())
+
+    def listall(self, count=0):
+        """ List available database entries. """
+        print('Available access points:')
+        for i in range(len(self.db.keys())):
+            print(str(count + 1) + ') ' + self.dbkeys[count])
+            count += 1
+
+    def check(self, registered=False):
+        """ Lookup for valid entry in database. """
+        try:
+            self.db[args['<alias>']]
+            registered = True
+        except:
+                pass
+        if args['--add'] and registered:
+            print('Error: access point with same alias already registered')
+            exit(1)
+        if (args['--connect'] or args['--delete']) and not registered:
+            print('Error: unknown access point')
+            exit(1)
+
+    def delete(self):
+        """ Remove a database entry. """
+        del self.db[args['<alias>']]
+        self._save()
+
+    def add(self):
+        """ Add a database entry. """
+        newentry = {args['<alias>']: {'nwid': args['<nwid>']}}
+        if args['<ip>']:
+            for i in ['ip', 'netmask', 'gateway', 'dns']:
+                newentry[args['<alias>']][i] = args['<' + i + '>']
+        self.db.update(newentry)
+        self._save()
+
+    def _save(self):
+        """ Save database. """
+        with open(dbfile, 'w') as fp:
+            json.dump(self.db, fp, indent=4, sort_keys=True)
+        print('Done')
+
+
+def init():
 
     """ Create and install all required components (one-time) """
 
@@ -125,118 +230,17 @@ def scan(count=1):
             count += 1
 
 
-class PasswordManager(object):
-
-    """ This class handles password related operations. """
-
-    def __init__(self):
-        self.gpg = gnupg.GPG(gnupghome=basedir)
-        self.gpg.encoding = 'utf-8'
-
-        try:
-            if args['--add']:
-                self.passwd = getpass('Password: ')
-            elif args['--connect']:
-                self.master = getpass('Master Password: ')
-            elif args['--init']:
-                pprompt = lambda: (
-                    getpass('Master password: '),
-                    getpass('Retype password: ')
-                )
-                self.master, master2 = pprompt()
-                while self.master != master2:
-                    print('Passwords do not match. Try again')
-                    self.master, master2 = pprompt()
-        except KeyboardInterrupt:
-            print()
-            exit()
-
-    def genkey(self):
-        """ Generate a new GnuPG private key. """
-        input_data = self.gpg.gen_key_input(
-            key_length=4096, name_email=receipt, passphrase=self.master)
-        key = self.gpg.gen_key(input_data)
-
-    def encrypt(self):
-        """ Encrypt a password. """
-        self.gpg.encrypt(
-            self.passwd, receipt, output=pwdir + args['<alias>'] + '.gpg')
-
-    def decrypt(self):
-        """ Decrypt a password. """
-        with open(pwdir + args['<alias>'] + '.gpg', 'rb') as fp:
-            self.passwd = str(self.gpg.decrypt_file(fp, passphrase=self.master))
-        if not self.passwd:
-            print("Invalid master password")
-            exit()
-
-    def delete(self):
-        """ Delete a password. """
-        os.remove(pwdir + args['<alias>'] + '.gpg')
-
-
-class DatabaseManager(object):
-
-    """ This class handles all database operations. """
-
-    def __init__(self):
-        with open(dbfile) as fp:
-            self.db = json.load(fp)
-        self.dbkeys = sorted(self.db.keys())
-
-    def list_entries(self, count=0):
-        """ List available database entries. """
-        print('Available access points:')
-        for i in range(len(self.db.keys())):
-            print(str(count + 1) + ') ' + self.dbkeys[count])
-            count += 1
-
-    def check(self, registered=False):
-        """ Lookup for valid entry in database. """
-        try:
-            self.db[args['<alias>']]
-            registered = True
-        except:
-                pass
-
-        if args['--add'] and registered:
-            print('Error: access point with same alias already registered')
-            exit(1)
-
-        if (args['--connect'] or args['--delete']) and not registered:
-            print('Error: unknown access point')
-            exit(1)
-
-    def get_entry(self):
-        """ Fetch configuration associatied to an alias. """
-        return self.db[args['<alias>']]
-
-    def save(self):
-        """ Remove or add a database entry. """
-        if args['--delete']:
-            del self.db[args['<alias>']]
-        elif args['--add']:
-            newentry = {args['<alias>']: {'nwid': args['<nwid>']}}
-            if args['<ip>']:
-                for i in ['ip', 'netmask', 'gateway', 'dns']:
-                    newentry[args['<alias>']][i] = args['<' + i + '>']
-            self.db.update(newentry)
-        with open(dbfile, 'w') as fp:
-            json.dump(self.db, fp, indent=4, sort_keys=True)
-        print('Done')
-
-
 def main():
 
     """ Main function. """
 
     if args['--init']:
-        init_components()
+        init()
     elif args['--scan']:
         scan()
     elif args['--list']:
         db = DatabaseManager()
-        db.list_entries()
+        db.listall()
     else:
         db = DatabaseManager()
         passmgr = PasswordManager()
@@ -244,14 +248,13 @@ def main():
 
         if args['--connect']:
             passmgr.decrypt()
-            connect(passmgr.passwd, db.get_entry())
+            connect(passmgr.passwd, db[args['<alias>']])
         elif args['--add']:
             passmgr.encrypt()
-            db.save()
+            db.add()
         elif args['--delete']:
-            db.check()
             passmgr.delete()
-            db.save()
+            db.delete()
 
 
 if __name__ == "__main__":
