@@ -49,6 +49,12 @@ def database(action):
 
     """ This function handles all database operations. """
 
+    # Create database.
+    if action == 'create':
+        f = open(dbfile, 'w')
+        f.write('{}')
+        return
+
     # Fetch database.
     with open(dbfile) as fp:
         db = json.load(fp)
@@ -163,15 +169,13 @@ def init():
         if os.path.isdir(pwdir):
             print('Error: components already initialized')
         else:
-            print('Error: Directory structure: permission denied')
+            print('Error: permission denied')
         exit(1)
 
-    f = open(dbfile, 'w')
-    f.write('{}')
+    database('create')
     print('Database: done')
 
-    passmgr = PasswordManager()
-    passmgr.genkey()
+    password('genkey')
     print('GnuPG: done')
 
 
