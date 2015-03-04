@@ -7,7 +7,7 @@ wifi is a secure wifi network manager designed for OpenBSD.
 * Auto-connect to the nearest access point
 * Add or delete access points
 * List all registered access points
-* Scan for available access points and sort results by attenuation
+* Scan for available access points
 * Password encryption via GnuPG
 
 ## Requirements
@@ -31,13 +31,12 @@ You're now ready to go.
 
 ## Usage
 ```sh
-$ wifi --help
 Manage Wifi access points.
 
 Usage:
   wifi --add <alias> <nwid> [(<ip> <netmask> <gateway> <dns>)]
   wifi --delete <alias>
-  wifi --connect <alias>
+  wifi --connect (--auto | <alias>)
   wifi --list
   wifi --scan
   wifi --init
@@ -47,12 +46,13 @@ Usage:
 Options:
   -h --help      Show this screen.
   -v --version   Show version.
-  -i --init      Initialize required files.
   -a --add       Add an access point.
-  -d --delete    Delete an access point.
   -c --connect   Connect to an access point.
+  -d --delete    Delete an access point.
+  -i --init      Initialize required files.
   -l --list      List available access points.
   -s --scan      Show the results of an access point scan.
+  -A --auto      Connect to the nearest saved access point.
 ```
 
 #### Flow
@@ -70,10 +70,6 @@ home (ACCESS_POINT1)
 office (ACCESS_POINT2)
 
 $ sudo wifi --connect home
-Master password:
-Connected to ACCESS_POINT1
-
-$ sudo wifi --connect --auto
 Master password:
 Connected to ACCESS_POINT1
 
