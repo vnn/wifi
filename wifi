@@ -228,7 +228,7 @@ def connect():
                 print('Error: timeout')
 
 
-def scan(action):
+def scan(action=''):
 
     """ Scan wifi networks. """
 
@@ -253,7 +253,7 @@ def scan(action):
     # Process action.
     if action == 'fetch':
         return ap_list
-    elif action == 'print':
+    else:
         print('{} available access points:'.format(str(len(sorted_list))))
         for i in sorted_list:
             print(i[0] + ' (' + i[1] + ')')
@@ -293,11 +293,11 @@ def main():
     if args['--init']:
         init()
     elif args['--scan']:
-        scan('print')
-    elif args['--list']:
-        database('list')
+        scan()
     elif args['--connect']:
         connect()
+    elif args['--list']:
+        database('list')
     elif args['--add']:
         database('add')
         password('add')
