@@ -32,8 +32,9 @@ import ipaddress
 import json
 import os
 import re
-from subprocess import call, Popen, DEVNULL, PIPE
+from subprocess import call, check_output, Popen, DEVNULL, PIPE
 import stat
+from sys import exit
 
 from docopt import docopt
 import gnupg
@@ -65,15 +66,14 @@ def database(action):
     if action == 'get_entry':
         if args['--auto']:
             # Any scan result matching our database entries?
-            scan_results = scan('fetch')
+            scan_results = scan()
             for i in scan_results:
                 for alias in db.keys():
                     if i[0] == db[alias]['nwid']:
                         args['<alias>'] = alias
 
             if not args['<alias>']:
-                print('No available access point.')
-                exit()
+                exit('No available access point.')
 
         return db[args['<alias>']]
 
@@ -88,12 +88,10 @@ def database(action):
     try:
         is_valid = db[args['<alias>']]
         if args['--add']:
-            print('Error: alias already registered')
-            exit(1)
+            exit('Error: alias already registered')
     except:
         if args['--connect'] or args['--remove']:
-            print('Error: unknown alias')
-            exit(1)
+            exit('Error: unknown alias')
 
     def _save():
         """ This function writes changes to the database. """
@@ -137,8 +135,7 @@ def password(action):
             gpg.gen_key(gpg.gen_key_input(
                 key_length=4096, name_email=receipt, passphrase=master))
         except KeyboardInterrupt:
-            print()
-            exit()
+            exit(' ')
 
     # Encrypt a password.
     if action == 'add':
@@ -146,23 +143,20 @@ def password(action):
             pw = getpass('Password: ')
             gpg.encrypt(pw, receipt, output=pwdir + args['<alias>'] + '.gpg')
         except KeyboardInterrupt:
-            print()
-            exit()
+            exit(' ')
 
     # Decrypt a password.
     if action == 'decrypt':
         try:
             master = getpass('Master Password: ')
         except KeyboardInterrupt:
-            print()
-            exit()
+            exit(' ')
 
         with open(pwdir + args['<alias>'] + '.gpg', 'rb') as f:
             pw = str(gpg.decrypt_file(f, passphrase=master))
 
         if not pw:
-            print("Invalid master password")
-            exit()
+            exit("Invalid master password")
         else:
             return pw
 
@@ -180,10 +174,9 @@ def init():
         print('Directory structure: done')
     except IOError:
         if os.path.isdir(pwdir):
-            print('Error: components already initialized')
+            exit('Error: components already initialized')
         else:
-            print('Error: permission denied')
-        exit(1)
+            exit('Error: permission denied')
 
     database('create')
     print('Database: done')
@@ -235,35 +228,29 @@ def disconnect():
     print('Disconnected')
 
 
-def scan(action=''):
+def scan():
 
     """ Scan wifi networks. """
 
-    results = Popen("ifconfig " + myif + " scan", stdout=PIPE, shell=True)
-    ap_list = []
-
-    for i in str(results.stdout.read(), 'utf-8').split('\n'):
-        if re.match("^nwid", i.strip()):
-            i = i.replace('"', '').split(' chan')
-            nwid = i[0].replace('nwid', '').strip()
-            if not nwid:
-                nwid = 'unknown'
-            ap_list.append((nwid, i[1].split(' ')[4]))
-
-    sorted_list = sorted(ap_list, key=lambda ap: ap[1], reverse=True)
+    ifscan = str(check_output("ifconfig " + myif + " scan | grep bssid", \
+        shell=True), 'utf-8').strip().split('\n')
 
     # If we're lost in a desert, exit.
-    if not ap_list:
-        print('Scan ends with no result.')
-        exit(0)
+    if not ifscan:
+        exit('Scan ends with no result.')
+
+    # Sort results by attenuation
+    for idx, i in enumerate(ifscan):
+        i = i.replace('""', 'unknown').replace('"', '').split('chan')
+        ifscan[idx] = (i[0].replace('nwid', '').strip(), i[1].split(' ')[4])
+    ap_list = sorted(ifscan, key=lambda ap: ap[1], reverse=True)
 
     # Process action.
-    if action == 'fetch':
+    if args['--auto']:
         return ap_list
     else:
-        print('{} available access points:'.format(str(len(sorted_list))))
-        for i in sorted_list:
-            print(i[0] + ' (' + i[1] + ')')
+        print('{} available access points:'.format(str(len(ap_list))))
+        [print(p[0] + ' (' + p[1] + ')') for p in ap_list]
 
 
 def check_args():
@@ -285,13 +272,11 @@ def check_args():
                    len(args['<gateway>']) > 255:
                     raise
         except:
-            print('Error: invalid network configuration')
-            exit(1)
+            exit('Error: invalid network configuration')
 
     elif (args['--connect'] or args['--scan'] or args['--disconnect']) \
        and os.getenv('USER') != 'root':
-        print('Error: this command should be run as root')
-        exit(1)
+        exit('Error: this command should be run as root')
 
 
 def main():
