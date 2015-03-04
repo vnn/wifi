@@ -22,7 +22,7 @@ Options:
   -i --init      Initialize required files.
   -l --list      List available access points.
   -s --scan      Show the results of an access point scan.
-  -A --auto      Connect to nearest known access point.
+  -A --auto      Auto-select nearest known access point.
 """
 
 from getpass import getpass
