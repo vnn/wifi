@@ -194,7 +194,7 @@ def connect():
 
     """ Connect to a wifi access point. """
 
-    ap = database('get_entry'),
+    ap = database('get_entry')
     passwd = password('decrypt')
 
     def cmd(command):
@@ -202,7 +202,7 @@ def connect():
 
     # setup interface/route/dns
     cmd(["ifconfig", myif, "down"])
-    cmd(['ifconfig', myif, 'nwid', ap[0]['nwid'], 'wpakey', passwd])
+    cmd(['ifconfig', myif, 'nwid', ap['nwid'], 'wpakey', passwd])
 
     if len(ap) > 2:
         cmd(['ifconfig', myif, 'inet', ap['ip'], 'netmask', ap['netmask']])
@@ -221,7 +221,7 @@ def connect():
     for count in range(15):
         try:
             r = requests.get('http://www.google.fr')
-            print('Connected to {}.'.format(ap[0]['nwid']))
+            print('Connected to {}.'.format(ap['nwid']))
             break
         except:
             if count == 14:
