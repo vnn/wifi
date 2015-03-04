@@ -70,7 +70,7 @@ def database(action):
                         args['<alias>'] = alias
 
             if not args['<alias>']:
-                print('No saved access point currently available.')
+                print('No available access point.')
                 exit()
 
         return db[args['<alias>']]
@@ -245,6 +245,12 @@ def scan(action):
 
     sorted_list = sorted(ap_list, key=lambda ap: ap[1], reverse=True)
 
+    # If we're lost in a desert, exit.
+    if not ap_list:
+        print('No result.')
+        exit()
+
+    # Process action.
     if action == 'fetch':
         return ap_list
     elif action == 'print':
