@@ -5,8 +5,9 @@ Manage Wifi access points.
 
 Usage:
   wifi --add <alias> <nwid> [(<ip> <netmask> <gateway> <dns>)]
-  wifi --delete <alias>
+  wifi --remove <alias>
   wifi --connect (--auto | <alias>)
+  wifi --disconnect
   wifi --list
   wifi --scan
   wifi --init
@@ -14,15 +15,16 @@ Usage:
   wifi --version
 
 Options:
-  -h --help      Show this screen.
-  -v --version   Show version.
-  -a --add       Add an access point.
-  -c --connect   Connect to an access point.
-  -d --delete    Delete an access point.
-  -i --init      Initialize required files.
-  -l --list      List available access points.
-  -s --scan      Show the results of an access point scan.
-  -A --auto      Auto-select nearest known access point.
+  -h --help        Show this screen.
+  -v --version     Show version.
+  -a --add         Add an access point.
+  -c --connect     Connect to an access point.
+  -d --disconnect  Disconnect wireless interface.
+  -r --remove      Delete an access point.
+  -i --init        Initialize required files.
+  -l --list        List available access points.
+  -s --scan        Show the results of an access point scan.
+  -A --auto        Auto-select nearest known access point.
 """
 
 from getpass import getpass
@@ -89,7 +91,7 @@ def database(action):
             print('Error: alias already registered')
             exit(1)
     except:
-        if args['--connect'] or args['--delete']:
+        if args['--connect'] or args['--remove']:
             print('Error: unknown alias')
             exit(1)
 
@@ -228,6 +230,11 @@ def connect():
                 print('Error: timeout')
 
 
+def disconnect():
+    call(["ifconfig", myif, "down"], stdout=DEVNULL, stderr=DEVNULL)
+    print('Disconnected.')
+
+
 def scan(action=''):
 
     """ Scan wifi networks. """
@@ -281,7 +288,8 @@ def check_args():
             print('Error: invalid network configuration')
             exit(1)
 
-    elif (args['--connect'] or args['--scan']) and os.getenv('USER') != 'root':
+    elif (args['--connect'] or args['--scan'] or args['--disconnect']) \
+       and os.getenv('USER') != 'root':
         print('Error: this command should be run as root')
         exit(1)
 
@@ -296,17 +304,19 @@ def main():
         scan()
     elif args['--connect']:
         connect()
+    elif args['--disconnect']:
+        disconnect()
     elif args['--list']:
         database('list')
     elif args['--add']:
         password('add')
         database('add')
-    elif args['--delete']:
+    elif args['--remove']:
         password('delete')
         database('delete')
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, version='wifi 0.3')
+    args = docopt(__doc__, version='wifi 0.3.1')
     check_args()
     main()

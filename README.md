@@ -35,8 +35,9 @@ Manage Wifi access points.
 
 Usage:
   wifi --add <alias> <nwid> [(<ip> <netmask> <gateway> <dns>)]
-  wifi --delete <alias>
+  wifi --remove <alias>
   wifi --connect (--auto | <alias>)
+  wifi --disconnect
   wifi --list
   wifi --scan
   wifi --init
@@ -44,15 +45,16 @@ Usage:
   wifi --version
 
 Options:
-  -h --help      Show this screen.
-  -v --version   Show version.
-  -a --add       Add an access point.
-  -c --connect   Connect to an access point.
-  -d --delete    Delete an access point.
-  -i --init      Initialize required files.
-  -l --list      List available access points.
-  -s --scan      Show the results of an access point scan.
-  -A --auto      Auto-select nearest known access point.
+  -h --help        Show this screen.
+  -v --version     Show version.
+  -a --add         Add an access point.
+  -c --connect     Connect to an access point.
+  -d --disconnect  Disconnect wireless interface.
+  -r --remove      Delete an access point.
+  -i --init        Initialize required files.
+  -l --list        List available access points.
+  -s --scan        Show the results of an access point scan.
+  -A --auto        Auto-select nearest known access point.
 ```
 
 #### Flow
