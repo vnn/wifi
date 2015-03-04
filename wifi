@@ -6,7 +6,7 @@ Manage Wifi access points.
 Usage:
   wifi --add <alias> <nwid> [(<ip> <netmask> <gateway> <dns>)]
   wifi --delete <alias>
-  wifi --connect <alias>
+  wifi --connect (--auto | <alias>)
   wifi --list
   wifi --scan
   wifi --init
@@ -16,12 +16,13 @@ Usage:
 Options:
   -h --help      Show this screen.
   -v --version   Show version.
-  -i --init      Initialize required files.
   -a --add       Add an access point.
-  -d --delete    Delete an access point.
   -c --connect   Connect to an access point.
+  -d --delete    Delete an access point.
+  -i --init      Initialize required files.
   -l --list      List available access points.
   -s --scan      Show the results of an access point scan.
+  -A --auto      Connect to the nearest saved access point.
 """
 
 from getpass import getpass
@@ -53,10 +54,26 @@ def database(action):
         f.write('{}')
         return
 
-    # Fetch database.
+    # Open database and store it as an object.
     with open(dbfile) as f:
         db = json.load(f)
         dbkeys = sorted(db.keys())
+
+    # Return current entry associated values as a dict.
+    if action == 'get_entry':
+        if args['--auto']:
+            # Any scan result matching our database entries?
+            scan_results = scan('fetch')
+            for i in scan_results:
+                for alias in db.keys():
+                    if i[0] == db[alias]['nwid']:
+                        args['<alias>'] = alias
+
+            if not args['<alias>']:
+                print('No saved access point currently available.')
+                exit()
+
+        return db[args['<alias>']]
 
     # List available database entries and exit.
     if action == 'list':
@@ -75,10 +92,6 @@ def database(action):
         if args['--connect'] or args['--delete']:
             print('Error: unknown alias')
             exit(1)
-
-    # Return current entry values from database as a dict.
-    if action == 'get_conf':
-        return db[args['<alias>']]
 
     def _save():
         """ This function writes changes to the database. """
@@ -177,16 +190,19 @@ def init():
     print('GnuPG: done')
 
 
-def connect(ap, passwd):
+def connect():
 
     """ Connect to a wifi access point. """
+
+    ap = database('get_entry'),
+    passwd = password('decrypt')
 
     def cmd(command):
         call(command, stdout=DEVNULL, stderr=DEVNULL)
 
     # setup interface/route/dns
     cmd(["ifconfig", myif, "down"])
-    cmd(['ifconfig', myif, 'nwid', ap['nwid'], 'wpakey', passwd])
+    cmd(['ifconfig', myif, 'nwid', ap[0]['nwid'], 'wpakey', passwd])
 
     if len(ap) > 2:
         cmd(['ifconfig', myif, 'inet', ap['ip'], 'netmask', ap['netmask']])
@@ -202,17 +218,17 @@ def connect(ap, passwd):
     cmd(["pfctl", "-e", "-Fa", "-f/etc/pf.conf"])
 
     # check connectivity
-    for count in range(10):
+    for count in range(15):
         try:
             r = requests.get('http://www.google.fr')
-            print('Connected to {}'.format(ap['nwid']))
+            print('Connected to {}'.format(ap[0]['nwid']))
             break
         except:
-            if count == 9:
+            if count == 14:
                 print('Error: timeout')
 
 
-def scan():
+def scan(action):
 
     """ Scan wifi networks. """
 
@@ -221,14 +237,20 @@ def scan():
 
     for i in str(results.stdout.read(), 'utf-8').split('\n'):
         if re.match("^nwid", i.strip()):
-            i = i.split(' chan')
-            ap_list.append((i[0].strip().replace('nwid ', ''), i[1].split(' ')[4]))
+            i = i.replace('"', '').split(' chan')
+            nwid = i[0].replace('nwid', '').strip()
+            if not nwid:
+                nwid = 'unknown'
+            ap_list.append((nwid, i[1].split(' ')[4]))
 
     sorted_list = sorted(ap_list, key=lambda ap: ap[1], reverse=True)
 
-    print('{} available access points:'.format(str(len(sorted_list))))
-    for idx, i in enumerate(sorted_list, start=1):
-        print(i[0].replace('""', '_') + ' (' + i[1] + ')')
+    if action == 'fetch':
+        return ap_list
+    elif action == 'print':
+        print('{} available access points:'.format(str(len(sorted_list))))
+        for i in sorted_list:
+            print(i[0] + ' (' + i[1] + ')')
 
 
 def check_args():
@@ -262,16 +284,14 @@ def main():
 
     """ Main function. """
 
-    check_args()
-
     if args['--init']:
         init()
     elif args['--scan']:
-        scan()
+        scan('print')
     elif args['--list']:
         database('list')
     elif args['--connect']:
-        connect(database('get_conf'), password('decrypt'))
+        connect()
     elif args['--add']:
         database('add')
         password('add')
@@ -282,4 +302,5 @@ def main():
 
 if __name__ == "__main__":
     args = docopt(__doc__, version='wifi 0.2')
+    check_args()
     main()

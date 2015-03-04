@@ -4,6 +4,7 @@ wifi is a secure wifi network manager designed for OpenBSD.
 
 ## Features
 * Connect to a list of registered access points
+* Auto-connect to the nearest access point
 * Add or delete access points
 * List all registered access points
 * Scan for available access points and sort results by attenuation
@@ -72,6 +73,10 @@ $ sudo wifi --connect home
 Master password:
 Connected to ACCESS_POINT1
 
+$ sudo wifi --connect --auto
+Master password:
+Connected to ACCESS_POINT1
+
 $ wifi --delete office
 
 $ sudo wifi --scan
@@ -87,6 +92,12 @@ FreeWifi_secure (178dB)
 Bbox-9BD917 (170dB)
 freebox (168dB)
 FreeWifi (168dB)
+```
+Once moving to the office:
+```sh
+$ sudo wifi --connect --auto
+Master password:
+Connected to ACCESS_POINT2
 ```
 
 ## Additional notes
