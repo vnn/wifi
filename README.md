@@ -1,6 +1,6 @@
 wifi
 ====
-wifi is a secure wifi network manager designed for OpenBSD.
+wifi is a command line tool written in python designed to manage a list of preferred 802.11 wireless networks and join them. Passwords are encrypted with GnuPG to help reduce the risk of security issue if file access was compromised.
 
 ## Features
 * Add or delete access points
