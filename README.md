@@ -3,12 +3,12 @@ wifi
 wifi is a secure wifi network manager designed for OpenBSD.
 
 ## Features
-* Connect to a list of registered access points
-* Auto-connect to the nearest access point
 * Add or delete access points
+* Connect to registered access points
+* Auto-connect to the nearest known access point
 * List all registered access points
 * Scan for available access points
-* Password encryption via GnuPG
+* Password encryption (RSA-4096 via GnuPG)
 
 ## Requirements
  * python 3.4: https://www.python.org/
