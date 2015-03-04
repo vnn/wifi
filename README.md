@@ -99,4 +99,8 @@ Connected to ACCESS_POINT2
 ## Additional notes
 Access points config informations are stored in **access_points.json** while their respective passwords (encrypted with a 4096 bits RSA key) are written in standalone files conventionally named **\<alias\>.gpg**. 
 
-Thanks to my friend Tamentis for his help on this project.
+wifi is currently not ipv6 ready due to the fact I don't need so. That being said you can easily add this feature by adding some if statements in the _connect()_ function.
+
+## Author
+Vincent Tantardini: http://www.vtcreative.fr/
+Thanks to my friend @Tamentis for his help on this project.
