@@ -97,6 +97,6 @@ Connected to ACCESS_POINT2
 ```
 
 ## Additional notes
-Access points config informations are stored in **access_points.json** while their respective passwords (encrypted with a 4096 bits RSA key) are written in standalone files conventionally named **\<ALIAS\>.gpg**. 
+Access points config informations are stored in **access_points.json** while their respective passwords (encrypted with a 4096 bits RSA key) are written in standalone files conventionally named **\<alias\>.gpg**. 
 
 Thanks to my friend Tamentis for his help on this project.
