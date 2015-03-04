@@ -73,8 +73,6 @@ $ sudo wifi --connect home
 Master password:
 Connected to ACCESS_POINT1
 
-$ wifi --delete office
-
 $ sudo wifi --scan
 11 available access points:
 FreeWifi (204dB)
@@ -88,6 +86,8 @@ FreeWifi_secure (178dB)
 Bbox-9BD917 (170dB)
 freebox (168dB)
 FreeWifi (168dB)
+
+$ wifi --delete home
 ```
 Once moving to the office:
 ```sh
