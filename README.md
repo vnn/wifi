@@ -89,7 +89,10 @@ Bbox-9BD917 (170dB)
 freebox (168dB)
 FreeWifi (168dB)
 
-$ wifi --delete home
+$ wifi --disconnect
+Disconnected
+
+$ wifi --remove home
 ```
 Once moving to the office:
 ```sh

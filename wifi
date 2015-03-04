@@ -232,7 +232,7 @@ def connect():
 
 def disconnect():
     call(["ifconfig", myif, "down"], stdout=DEVNULL, stderr=DEVNULL)
-    print('Disconnected.')
+    print('Disconnected')
 
 
 def scan(action=''):
