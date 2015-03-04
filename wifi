@@ -299,11 +299,11 @@ def main():
     elif args['--list']:
         database('list')
     elif args['--add']:
-        database('add')
         password('add')
+        database('add')
     elif args['--delete']:
-        database('delete')
         password('delete')
+        database('delete')
 
 
 if __name__ == "__main__":
