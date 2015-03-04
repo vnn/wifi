@@ -56,7 +56,7 @@ Options:
 ```
 
 #### Flow
-Here is an overview of the user flow:
+Here is an overview of the user flow, long arguments are used for clarity:
 ```sh
 $ wifi --add home ACCESS_POINT1
 Password:
