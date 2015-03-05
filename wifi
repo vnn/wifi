@@ -34,8 +34,7 @@ import ipaddress
 import json
 import os
 import re
-from subprocess import call, check_output, Popen, DEVNULL, PIPE
-import stat
+from subprocess import call, check_output, DEVNULL
 import sys
 
 from docopt import docopt
@@ -45,21 +44,67 @@ import requests
 
 # Config
 basedir = os.path.expanduser('~/.wifi/')
-pwdir = basedir + 'passwords/'
-dbfile = basedir + 'access_points.json'
+dbfile = basedir + 'wifi.json'
 receipt = os.getlogin() + '@' + os.uname()[1]
 myif = 'iwn0'  # Change this to fit your needs
 
 
+def gpgcore(action, password=None):
+
+    """ This function handles GnuPG related operations. """
+
+    gpg = gnupg.GPG(gnupghome=basedir)
+    gpg.encoding = 'utf-8'
+
+    if action == 'genkey':
+        # Generate a new GnuPG private key.
+        try:
+            pprompt = lambda: (
+                getpass('Master password: '), getpass('Retype password: '))
+            master, master2 = pprompt()
+            while master != master2:
+                print('Passwords do not match. Try again')
+                master, master2 = pprompt()
+
+            gpg.gen_key(gpg.gen_key_input(
+                key_length=4096, name_email=receipt, passphrase=master))
+        except KeyboardInterrupt:
+            sys.exit(' ')
+
+    if action == 'decrypt':
+        # Return decrypted Password.
+        try:
+            master = getpass('Master Password: ')
+        except KeyboardInterrupt:
+            sys.exit(' ')
+        pw = str(gpg.decrypt(password.encode('utf-8'), passphrase=master))
+        return pw if pw else sys.exit('Error: invalid master password')
+
+    if action == 'encrypt':
+        # Return encrypted password.
+        try:
+            pw = getpass('Password: ')
+        except KeyboardInterrupt:
+            sys.exit(' ')
+        cr = gpg.encrypt(pw, receipt)
+        return cr if cr else sys.exit("Error: unable to create key")
+
+
 def database(action):
+
     """ This function handles all database operations. """
-    # Create database.
+
+    def _save():
+        """ This function writes changes to the database. """
+        with open(dbfile, 'w') as f:
+            json.dump(db, f, indent=4, sort_keys=True)
+
     if action == 'create':
-        f = open(dbfile, 'w')
-        f.write('{}')
+        with os.fdopen(os.open(dbfile, os.O_WRONLY | os.O_CREAT, int("0600", 8)), 'w') as f:
+            f.write('{}')
         return
 
-    # Open database and store it as an object.
+    # Open database and store it as a dict.
     with open(dbfile) as f:
         db = json.load(f)
         dbkeys = sorted(db.keys())
@@ -75,11 +120,28 @@ def database(action):
     if (args['--remove'] or (args['--connect'] and not args['--auto'])) \
        and not args['<alias>'] in db:
         sys.exit('Error: unknown alias')
+    if args['--add'] and args['<alias>'] in db:
+        sys.exit('Error: alias already registered')
+
+    # Add a new entry into database.
+    if action == 'add':
+        newentry = {args['<alias>']: {'nwid': args['<nwid>'],
+            'password': str(gpgcore('encrypt'))}}
+        if args['<ip>']:
+            for i in ['ip', 'netmask', 'gateway', 'dns']:
+                newentry[args['<alias>']][i] = args['<' + i + '>']
+        db.update(newentry)
+        _save()
+
+    # Remove current entry entry from database.
+    if action == 'remove':
+        del db[args['<alias>']]
+        _save()
 
     # Return current entry associated values as a dict.
     if action == 'get_entry':
         if args['--auto']:
-            # Any scan result matching our database entries?
+            # Compare scan results to database entries.
             scan_results = scan()
             for i in scan_results:
                 for alias in dbkeys:
@@ -89,80 +151,10 @@ def database(action):
             if not args['<alias>']:
                 sys.exit('No available access point.')
 
+        db[args['<alias>']]['password'] = gpgcore('decrypt', (db[args['<alias>']]['password']))
+
+        # Finally, we return the database entry.
         return db[args['<alias>']]
-
-    def _save():
-        """ This function writes changes to the database. """
-        with open(dbfile, 'w') as f:
-            json.dump(db, f, indent=4, sort_keys=True)
-
-    # Remove current entry from database.
-    if action == 'delete':
-        del db[args['<alias>']]
-        _save()
-
-    # Add a new entry into database.
-    if action == 'add':
-        newentry = {args['<alias>']: {'nwid': args['<nwid>']}}
-        if args['<ip>']:
-            for i in ['ip', 'netmask', 'gateway', 'dns']:
-                newentry[args['<alias>']][i] = args['<' + i + '>']
-        db.update(newentry)
-        _save()
-
-
-def password(action):
-
-    """ This function handles password related operations. """
-
-    gpg = gnupg.GPG(gnupghome=basedir)
-    gpg.encoding = 'utf-8'
-
-    # Generate a new GnuPG private key.
-    if action == 'genkey':
-        try:
-            pprompt = lambda: (
-                getpass('Master password: '),
-                getpass('Retype password: ')
-            )
-            master, master2 = pprompt()
-            while master != master2:
-                print('Passwords do not match. Try again')
-                master, master2 = pprompt()
-
-            gpg.gen_key(gpg.gen_key_input(
-                key_length=4096, name_email=receipt, passphrase=master))
-        except KeyboardInterrupt:
-            sys.exit(' ')
-
-    # Encrypt a password.
-    if action == 'add':
-        if os.path.isfile(pwdir + args['<alias>'] + '.gpg'):
-            sys.exit('Error: alias already stored in database')
-        try:
-            pw = getpass('Password: ')
-            gpg.encrypt(pw, receipt, output=pwdir + args['<alias>'] + '.gpg')
-        except KeyboardInterrupt:
-            sys.exit(' ')
-
-    # Decrypt a password.
-    if action == 'decrypt':
-        try:
-            master = getpass('Master Password: ')
-        except KeyboardInterrupt:
-            sys.exit(' ')
-
-        with open(pwdir + args['<alias>'] + '.gpg', 'rb') as f:
-            pw = str(gpg.decrypt_file(f, passphrase=master))
-
-        if not pw:
-            sys.exit("Invalid master password")
-        else:
-            return pw
-
-    # Delete a password.
-    if action == 'delete':
-        os.remove(pwdir + args['<alias>'] + '.gpg')
 
 
 def init():
@@ -170,10 +162,10 @@ def init():
     """ Create and install all required components (one-time) """
 
     try:
-        os.makedirs(pwdir, stat.S_IRWXU)
+        os.makedirs(basedir, int("0700", 8))
         print('Directory structure: done')
     except IOError:
-        if os.path.isdir(pwdir):
+        if os.path.isdir(basedir):
             sys.exit('Error: components already initialized')
         else:
             sys.exit('Error: permission denied')
@@ -181,7 +173,7 @@ def init():
     database('create')
     print('Database: done')
 
-    password('genkey')
+    gpgcore('genkey')
     print('GnuPG: done')
 
 
@@ -190,16 +182,15 @@ def connect():
     """ Connect to a wifi access point. """
 
     ap = database('get_entry')
-    passwd = password('decrypt')
 
     def cmd(command):
         call(command, stdout=DEVNULL, stderr=DEVNULL)
 
     # setup interface/route/dns
     cmd(["ifconfig", myif, "down"])
-    cmd(['ifconfig', myif, 'nwid', ap['nwid'], 'wpakey', passwd])
+    cmd(['ifconfig', myif, 'nwid', ap['nwid'], 'wpakey', ap['password']])
 
-    if len(ap) > 2:
+    if len(ap) > 3:
         cmd(['ifconfig', myif, 'inet', ap['ip'], 'netmask', ap['netmask']])
         cmd(['route', 'delete', 'default'])
         cmd(['route', 'add', 'default', ap['gateway']])
@@ -233,7 +224,7 @@ def disconnect():
 
 def status():
 
-    """ Print wireless interface status. """
+    """ Output wireless interface status. """
 
     cmd = str(check_output("ifconfig " + myif, shell=True), 'utf-8').strip()
     results = [i for i in cmd.split('\n') if 'nwid' in i or 'status' in i]
@@ -273,6 +264,7 @@ def check_args():
         try:
             for i in [args['<ip>'], args['<netmask>'], args['<dns>']]:
                 ipaddress.ip_address(i)
+
             try:
                 ipaddress.ip_address(args['gateway'])
             except:
@@ -308,14 +300,12 @@ def main():
     elif args['--list']:
         database('list')
     elif args['--add']:
-        password('add')
         database('add')
     elif args['--remove']:
-        database('delete')
-        password('delete')
+        database('remove')
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, version='wifi 0.3.3')
+    args = docopt(__doc__, version='wifi 0.4.0')
     check_args()
     main()

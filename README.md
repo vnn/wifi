@@ -12,10 +12,10 @@ wifi is a command line tool written in python designed to manage a list of prefe
 * Password encryption (RSA-4096 via GnuPG)
 
 ## Requirements
- * python 3.4: https://www.python.org/
- * docopt: http://docopt.org/
- * python-gnupg: https://pypi.python.org/pypi/gnupg/
- * requests: https://pypi.python.org/pypi/requests
+* python 3.4: https://www.python.org/
+* docopt: http://docopt.org/
+* python-gnupg: https://pypi.python.org/pypi/gnupg/
+* requests: https://pypi.python.org/pypi/requests
 
 ## Installation
 Edit the script and replace **iwn0** (line 45) with your wifi network interface. Then, use the **--init** argument to create necessary folders, json database and generate the GnuPG private key:
@@ -108,11 +108,10 @@ Connected to ACCESS_POINT2
 ```
 
 ## Additional notes
-Access points config informations are stored in **access_points.json** while their respective passwords (encrypted with a 4096 bits RSA key) are written in standalone files conventionally named **\<alias\>.gpg**. 
+Access points config informations and passwords are stored in **wifi.json** (default: _~/.wifi_).
 
 wifi is currently not ipv6 ready due to the fact I don't need so. That being said you can easily add this feature by adding some if statements in the _connect()_ function.
 
 ## Author
-Vincent Tantardini: http://www.vtcreative.fr/
-
+* Vincent Tantardini: http://www.vtcreative.fr/
 Thanks to my friend @Tamentis for his help on this project.
