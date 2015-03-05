@@ -62,7 +62,7 @@ def database(action):
         db = json.load(f)
         dbkeys = sorted(db.keys())
 
-    # List available database entries and sys.exit.
+    # Print all database entries and return.
     if action == 'list':
         print('{} saved access points:'.format(str(len(dbkeys))))
         for i in range(len(db)):
@@ -70,9 +70,8 @@ def database(action):
         return
 
     # Additional check: lookup for an alias occurency in the database.
-    if args['<alias>'] in db:
-        if args['--add']: sys.exit("Error: alias already registered")
-    elif (args['--connect'] and not args['--auto']) or args['--remove']:
+    if (args['--remove'] or (args['--connect'] and not args['--auto'])) \
+       and not args['<alias>'] in db:
         sys.exit('Error: unknown alias')
 
     # Return current entry associated values as a dict.
@@ -136,6 +135,8 @@ def password(action):
 
     # Encrypt a password.
     if action == 'add':
+        if os.path.isfile(pwdir + args['<alias>'] + '.gpg'):
+            sys.exit('Error: alias already stored in database')
         try:
             pw = getpass('Password: ')
             gpg.encrypt(pw, receipt, output=pwdir + args['<alias>'] + '.gpg')
@@ -289,14 +290,14 @@ def main():
     elif args['--list']:
         database('list')
     elif args['--add']:
-        database('add')
         password('add')
+        database('add')
     elif args['--remove']:
         database('delete')
         password('delete')
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, version='wifi 0.3.2')
+    args = docopt(__doc__, version='wifi 0.3.1')
     check_args()
     main()
