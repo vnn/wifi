@@ -18,7 +18,7 @@ wifi is a command line tool written in python designed to manage a list of prefe
 * requests: https://pypi.python.org/pypi/requests
 
 ## Installation
-Edit the script and replace **iwn0** (_line 49_) with your wifi network interface. Then, use the **--init** argument to create necessary folders, json database and generate the GnuPG private key:
+Edit the script and replace **iwn0** (_line 300_) with your wifi network interface. Then, use the **--init** argument to create necessary folders, json database and generate the GnuPG private key:
 
 ```sh
 $ wifi --init

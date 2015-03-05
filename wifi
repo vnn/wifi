@@ -42,13 +42,6 @@ import gnupg
 import requests
 
 
-# Config
-basedir = os.path.expanduser('~/.wifi/')
-dbfile = basedir + 'wifi.json'
-receipt = os.getlogin() + '@' + os.uname()[1]
-myif = 'iwn0'  # Change this to fit your needs
-
-
 def gpgcore(action, password=None):
 
     """ This function handles GnuPG related operations. """
@@ -65,7 +58,6 @@ def gpgcore(action, password=None):
             while master != master2:
                 print('Passwords do not match. Try again')
                 master, master2 = pprompt()
-
             gpg.gen_key(gpg.gen_key_input(
                 key_length=4096, name_email=receipt, passphrase=master))
         except KeyboardInterrupt:
@@ -100,7 +92,8 @@ def database(action):
             json.dump(db, f, indent=4, sort_keys=True)
 
     if action == 'create':
-        with os.fdopen(os.open(dbfile, os.O_WRONLY | os.O_CREAT, int("0600", 8)), 'w') as f:
+        dbfileobj = os.open(dbfile, os.O_WRONLY | os.O_CREAT, int("0600", 8))
+        with os.fdopen(dbfileobj, 'w') as f:
             f.write('{}')
         return
 
@@ -125,12 +118,11 @@ def database(action):
 
     # Add a new entry into database.
     if action == 'add':
-        newentry = {args['<alias>']: {'nwid': args['<nwid>'],
-            'password': str(gpgcore('encrypt'))}}
+        entry = {args['<alias>']: {'nwid': args['<nwid>'], 'password': str(gpgcore('encrypt'))}}
         if args['<ip>']:
             for i in ['ip', 'netmask', 'gateway', 'dns']:
-                newentry[args['<alias>']][i] = args['<' + i + '>']
-        db.update(newentry)
+                entry[args['<alias>']][i] = args['<' + i + '>']
+        db.update(entry)
         _save()
 
     # Remove current entry entry from database.
@@ -153,7 +145,7 @@ def database(action):
 
         db[args['<alias>']]['password'] = gpgcore('decrypt', (db[args['<alias>']]['password']))
 
-        # Finally, we return the database entry.
+        # Return the database entry as a dict.
         return db[args['<alias>']]
 
 
@@ -180,22 +172,21 @@ def init():
 def connect():
 
     """ Connect to a wifi access point. """
-
-    ap = database('get_entry')
-
     def cmd(command):
         call(command, stdout=DEVNULL, stderr=DEVNULL)
 
     # setup interface/route/dns
+    conf = database('get_entry')
     cmd(["ifconfig", myif, "down"])
-    cmd(['ifconfig', myif, 'nwid', ap['nwid'], 'wpakey', ap['password']])
+    cmd(['ifconfig', myif, 'nwid', conf['nwid'], 'wpakey', conf['password']])
+    del conf['password']
 
-    if len(ap) > 3:
-        cmd(['ifconfig', myif, 'inet', ap['ip'], 'netmask', ap['netmask']])
+    if len(conf) > 3:
+        cmd(['ifconfig', myif, 'inet', conf['ip'], 'netmask', conf['netmask']])
         cmd(['route', 'delete', 'default'])
-        cmd(['route', 'add', 'default', ap['gateway']])
+        cmd(['route', 'add', 'default', conf['gateway']])
         with open('/etc/resolv.conf', 'w') as f:
-            f.write('nameserver ' + ap['dns'])
+            f.write('nameserver ' + conf['dns'])
     else:
         cmd(['dhclient', myif])
 
@@ -207,7 +198,7 @@ def connect():
     for count in range(15):
         try:
             r = requests.get('http://www.google.fr')
-            print('Connected to {}.'.format(ap['nwid']))
+            print('Connected to {}.'.format(conf['nwid']))
             break
         except:
             if count == 14:
@@ -268,9 +259,7 @@ def check_args():
             try:
                 ipaddress.ip_address(args['gateway'])
             except:
-                if args['<gateway>'][-1] == ".":
-                    args['<gateway>'] = args['<gateway>'][:-1]
-
+                args['<gateway>'] = re.sub('\.$', '', args['<gateway>'][-1])
                 valid_host = re.compile("(?![-\.])[A-Za-z\d\.-]{1,63}(?<!-)$")
                 if not re.match(valid_host, args['<gateway>']) or \
                    len(args['<gateway>']) > 255:
@@ -306,6 +295,11 @@ def main():
 
 
 if __name__ == "__main__":
+    basedir = os.path.expanduser('~/.wifi/')
+    dbfile = basedir + 'wifi.json'
+    myif = 'iwn0'  # Change this to fit your needs
+    receipt = os.getlogin() + '@' + os.uname()[1]
+
     args = docopt(__doc__, version='wifi 0.4.0')
     check_args()
     main()
