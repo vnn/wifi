@@ -14,7 +14,7 @@ wifi is a command line tool written in python designed to manage a list of prefe
 ## Requirements
 * python 3.4: https://www.python.org/
 * docopt: http://docopt.org/
-* python-gnupg: https://pypi.python.org/pypi/gnupg/
+* python-gnupg: https://pypi.python.org/pypi/python-gnupg/
 * requests: https://pypi.python.org/pypi/requests
 
 ## Installation
