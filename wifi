@@ -203,7 +203,7 @@ def connect():
             break
         except:
             if count == 14:
-                print('Error: timeout')
+                sys.exit('Error: timeout')
 
 
 def disconnect():
