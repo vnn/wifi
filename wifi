@@ -229,9 +229,8 @@ def disconnect():
 def scan():
 
     """ Scan wifi networks. """
-
-    ifscan = str(check_output("ifconfig " + myif + " scan | grep bssid", \
-        shell=True), 'utf-8').strip().split('\n')
+    cmd = "ifconfig " + myif + " scan | grep bssid"
+    ifscan = str(check_output(cmd, shell=True), 'utf-8').strip().split('\n')
 
     if not ifscan:
         sys.exit('Scan ends with no result.')
@@ -271,7 +270,7 @@ def check_args():
             sys.exit('Error: invalid network configuration')
 
     elif (args['--connect'] or args['--scan'] or args['--disconnect']) \
-       and os.getenv('USER') != 'root':
+            and os.getenv('USER') != 'root':
         sys.exit('Error: this command should be run as root')
 
 
