@@ -172,6 +172,7 @@ def init():
 def connect():
 
     """ Connect to a wifi access point. """
+
     def cmd(command):
         call(command, stdout=DEVNULL, stderr=DEVNULL)
 
