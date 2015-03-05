@@ -7,6 +7,7 @@ wifi is a command line tool written in python designed to manage a list of prefe
 * Connect to registered access points
 * Auto-connect to the nearest known access point
 * List all registered access points
+* Show current wireless status
 * Scan for available access points
 * Password encryption (RSA-4096 via GnuPG)
 
@@ -40,6 +41,7 @@ Usage:
   wifi --disconnect
   wifi --list
   wifi --scan
+  wifi --status
   wifi --init
   wifi --help
   wifi --version
@@ -50,16 +52,20 @@ Options:
   -a --add         Add an access point.
   -c --connect     Connect to an access point.
   -d --disconnect  Disconnect wireless interface.
-  -r --remove      Delete an access point.
+  -r --remove      Remove an access point.
   -i --init        Initialize required files.
   -l --list        List available access points.
   -s --scan        Show the results of an access point scan.
   -A --auto        Auto-select nearest known access point.
+  -S --status      Show the connexion status.
 ```
 
 #### Flow
 Here is an overview of the user flow, long arguments are used for clarity:
 ```sh
+$ wifi --status
+Disconnected
+
 $ wifi --add home ACCESS_POINT1
 Password:
 

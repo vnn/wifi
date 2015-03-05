@@ -10,6 +10,7 @@ Usage:
   wifi --disconnect
   wifi --list
   wifi --scan
+  wifi --status
   wifi --init
   wifi --help
   wifi --version
@@ -20,11 +21,12 @@ Options:
   -a --add         Add an access point.
   -c --connect     Connect to an access point.
   -d --disconnect  Disconnect wireless interface.
-  -r --remove      Delete an access point.
+  -r --remove      Remove an access point.
   -i --init        Initialize required files.
   -l --list        List available access points.
   -s --scan        Show the results of an access point scan.
   -A --auto        Auto-select nearest known access point.
+  -S --status      Show the connexion status.
 """
 
 from getpass import getpass
@@ -222,8 +224,22 @@ def connect():
 
 
 def disconnect():
+
+    """ Disconnect wireless interface. """
+
     call(["ifconfig", myif, "down"], stdout=DEVNULL, stderr=DEVNULL)
     print('Disconnected')
+
+
+def status():
+
+    """ Print wireless interface status. """
+
+    cmd = str(check_output("ifconfig " + myif, shell=True), 'utf-8').strip()
+    results = [i for i in cmd.split('\n') if 'nwid' in i or 'status' in i]
+    status = results[0].split(' ', 1)[1]
+    confirm = 'Connected to ' + results[1].split('nwid ')[1].split(' chan')[0]
+    print(confirm) if status == 'active' else print('Disconnected')
 
 
 def scan():
@@ -287,6 +303,8 @@ def main():
         connect()
     elif args['--disconnect']:
         disconnect()
+    elif args['--status']:
+        status()
     elif args['--list']:
         database('list')
     elif args['--add']:
@@ -298,6 +316,6 @@ def main():
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, version='wifi 0.3.2')
+    args = docopt(__doc__, version='wifi 0.3.3')
     check_args()
     main()
