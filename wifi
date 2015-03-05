@@ -298,6 +298,6 @@ def main():
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, version='wifi 0.3.1')
+    args = docopt(__doc__, version='wifi 0.3.2')
     check_args()
     main()
