@@ -229,6 +229,7 @@ def disconnect():
 def scan():
 
     """ Scan wifi networks. """
+
     cmd = "ifconfig " + myif + " scan | grep bssid"
     ifscan = str(check_output(cmd, shell=True), 'utf-8').strip().split('\n')
 
