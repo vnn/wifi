@@ -49,8 +49,8 @@ def gpgcore(action, password=None):
     gpg = gnupg.GPG(gnupghome=basedir)
     gpg.encoding = 'utf-8'
 
+    # Generate a new GnuPG private key.
     if action == 'genkey':
-        # Generate a new GnuPG private key.
         try:
             pprompt = lambda: (
                 getpass('Master password: '), getpass('Retype password: '))
@@ -63,8 +63,8 @@ def gpgcore(action, password=None):
         except KeyboardInterrupt:
             sys.exit(' ')
 
+    # Return decrypted Password.
     if action == 'decrypt':
-        # Return decrypted Password.
         try:
             master = getpass('Master Password: ')
         except KeyboardInterrupt:
@@ -72,8 +72,8 @@ def gpgcore(action, password=None):
         pw = str(gpg.decrypt(password.encode('utf-8'), passphrase=master))
         return pw if pw else sys.exit('Error: invalid master password')
 
+    # Return encrypted password.
     if action == 'encrypt':
-        # Return encrypted password.
         try:
             pw = getpass('Password: ')
         except KeyboardInterrupt:
@@ -116,6 +116,22 @@ def database(action):
     if args['--add'] and args['<alias>'] in db:
         sys.exit('Error: alias already registered')
 
+    # Look for a result matching both a scan result and a database entry.
+    if args['--auto']:
+        scan_results = scan()
+        for i in scan_results:
+            for alias in dbkeys:
+                if i[0] == db[alias]['nwid']:
+                    args['<alias>'] = alias
+                    break
+        if not args['<alias>']:
+            sys.exit('No available access point.')
+
+    # Return selected database entry as a dict.
+    if action == 'get_entry':
+        db[args['<alias>']]['password'] = gpgcore('decrypt', (db[args['<alias>']]['password']))
+        return db[args['<alias>']]
+
     # Add a new entry into database.
     if action == 'add':
         entry = {args['<alias>']: {'nwid': args['<nwid>'], 'password': str(gpgcore('encrypt'))}}
@@ -129,24 +145,6 @@ def database(action):
     if action == 'remove':
         del db[args['<alias>']]
         _save()
-
-    # Return current entry associated values as a dict.
-    if action == 'get_entry':
-        if args['--auto']:
-            # Compare scan results to database entries.
-            scan_results = scan()
-            for i in scan_results:
-                for alias in dbkeys:
-                    if i[0] == db[alias]['nwid']:
-                        args['<alias>'] = alias
-
-            if not args['<alias>']:
-                sys.exit('No available access point.')
-
-        db[args['<alias>']]['password'] = gpgcore('decrypt', (db[args['<alias>']]['password']))
-
-        # Return the database entry as a dict.
-        return db[args['<alias>']]
 
 
 def init():
